@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Configuration objects</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Here's a simple function that displays some information
+
+display("spaceship", 312, 112);
+
+function display(name, x, y) {
+  console.log(`name: ${name}, x: ${x}, y: ${y}`);
+}
+
+//You can improve the clarity of this code by 
+//writing the function with a "configuration object" like this:
+
+displayClearly({name: "spaceship", x: 312, y: 112});
+
+function displayClearly(config) {
+  console.log(`name: ${config.name}, x: ${config.x}, y: ${config.y}`);
+}
+  
+</script>

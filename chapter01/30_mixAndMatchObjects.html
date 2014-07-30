@@ -1,0 +1,49 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Mix and match objects</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+  
+//Make a robot and a human
+function robot() {
+  return { 
+    skill: "vaporizing death ray"
+  };
+}
+
+function human() {
+  return {
+    hobby: "bake cookies"
+  };
+}
+
+function cyborg() {
+  //Make a newObject and add the robot's and human's properties to it
+  let newObject = {}; 
+  Object.assign(newObject, robot());
+  Object.assign(newObject, human());
+  
+  //Create a `speak function`
+  //`this` will refer to whatever object this function is attached to
+  function speak() {
+    console.log("I like to " + this.hobby + " using a " + this.skill);
+  }
+
+  //Attach the speak function to the `newObject`
+  //(Adding the function like this ensures that `this` point to `newObject`)
+  newObject.speak = speak;
+  
+  //Return the newObject
+  return newObject;
+}
+
+//Make a cyborg
+let zxlorb = cyborg();
+zxlorb.speak();
+
+//Displays:
+//"I like to bake cookies using a vaporizing death ray"
+
+</script>

@@ -1,0 +1,105 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Fullscreen button</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+  }
+  img {
+    display: block;  
+  }
+  #stage {
+    width: 1136px;
+    height: 640px;
+    background-color: black;
+    position: relative;
+  }
+  #button {
+    position: absolute;
+    right: 4%;
+    top: 6%;
+    width: 96px;
+    height: 96px;
+    background-image: url(images/makeBig.png);
+    cursor: pointer;
+  }
+  #stage:fullscreen img{
+    /* Center horizontally
+    height: 100%;
+    margin: 0 auto;
+    */
+    /* stretch to fit
+    width: 100%;
+    height: 100%;
+    */
+    /* Center vertically
+    position: fixed;
+    width: 100%;
+    height: auto;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: auto;
+    */
+  }
+  #stage:-webkit-full-screen img{
+    /* Center vertically */
+    position: fixed;
+    width: 100%;
+    height: auto;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin: auto;
+  }
+  #stage:-webkit-full-screen #button{
+    background-image: url(images/makeSmall.png);
+    right: 4%;
+    top: 10%;
+  }
+  #stage:-webkit-full-screen{
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+<div id="stage">
+  <img src="images/ratio_16x9.png">
+  <div id="button"></div>
+</div>
+
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+  
+let stage = document.querySelector("#stage");
+
+//Add a requestFullscreen polyfill to the stage
+let vendors = ["ms", "webkit", "o", "moz"];
+vendors.forEach(vendor => {
+  if (!stage.requestFullscreen) {
+    stage.requestFullscreen = stage[vendor + "RequestFullscreen"];
+  }
+});
+
+let button = document.querySelector("#button");
+button.addEventListener(
+  "mousedown", 
+  event => {
+    //Is there any element that's currently full screen?
+    if (!document.webkitFullscreenElement) {
+      //If not, make the stage full screen
+      stage.requestFullscreen();
+    } else {
+      //If there is, exit full screen mode
+      document.webkitExitFullscreen();
+    }
+  }, 
+  false
+);
+
+</script>

@@ -1,0 +1,44 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Using JSON</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Create an empty object to hold the JSON data
+let rooms = {};
+
+//Create a new xhr object
+let xhr = new XMLHttpRequest();
+
+//Use xhr to load the JSON file
+xhr.open("GET", "rooms.json", true);
+
+//Tell xhr that it's a text file
+xhr.responseType = 'text';
+
+//Create an `onload` callback function that
+//will handle the file loading
+
+xhr.onload = event => {
+  //Check to make sure the file has loaded properly
+  if (xhr.status === 200) {
+    //Copy the JSON file into the `rooms` object
+    rooms = JSON.parse(xhr.responseText);
+    console.log("JSON data loaded");
+
+    //Now you can use this data to view the library contents
+    console.log(rooms.livingRoom.contents);
+
+    //Check whether the closet's light is on
+    if (rooms.closet.light.on === false) {
+      console.log("The closet light is off");
+    }
+  }
+};
+
+//Send the request to load the file
+xhr.send();
+
+</script>

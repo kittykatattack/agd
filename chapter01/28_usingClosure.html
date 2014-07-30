@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Using closure</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+function animal() {
+  let newObject, words;
+  
+  //A helper function to return a random integer within a minimum
+  //and maximum range
+  function random(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+  
+  //The animal's vocabulary
+  words = ["Food!", "Sleep!", "Video games!"];
+  
+  //A speak function that chooses random words
+  function speak() {
+    let say = words[random(0, 2)];
+    console.log(say);
+  }
+  
+  //Create a newObject and add the speak function to it
+  newObject = {};
+  newObject.speak = speak;
+  
+  //Return the newObject
+  return newObject;
+}
+
+//Make a cat, and change the "say" value
+let cat = animal();
+cat.speak();
+  
+</script>

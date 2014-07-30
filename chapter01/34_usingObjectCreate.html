@@ -1,0 +1,89 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Making objects</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+  
+//Create a general animal template that can be used to
+//make more animals with customized properties
+let animal = {
+  legs: 4,
+  eyes: 2,
+  say: "Huh?",
+  speak() {
+    console.log(this.say);
+  }
+};
+
+//You can use `Object.create` to make a new object from `animal`
+//Make a cat, and change the "say" value
+let cat = Object.create(animal);
+cat.say = "Meow!";
+
+//Make the cat speak
+cat.speak();
+
+//Displays:
+//Meow!
+
+//Find out what the cat's properites are
+console.log(Object.keys(cat));
+
+//Make a bird:
+let bird = Object.create(animal);
+bird.say = "Chirp!";
+bird.speak();
+
+//Find out how many legs the cat has
+console.log(`Cat legs: ${cat.legs}`);
+//Displays:
+//Cat legs: 4
+
+//Change the number of legs in the animal prototype
+animal.legs = 2
+
+//Find out how many legs the cat now has
+console.log(`Cat legs: ${cat.legs}`);
+
+//Displays:
+//2
+
+//Give the cat its own legs property
+cat.legs = 3;
+
+//Now check to see how many legs the animal has, and
+//how many the cat has
+console.log(`Animal legs: ${animal.legs}`);
+console.log(`Cat legs: ${cat.legs}`);
+
+//Displays:
+//Animal legs: 2
+//Cat legs: 3
+
+//Check to see what the object's properties are
+console.log(Object.keys(cat));
+
+//Displays:
+//["say", "legs"]
+
+//Try removing the "say" property to see what
+//happens when the cat speaks
+delete cat.say;
+cat.speak();
+
+//Displays:
+//Huh?
+
+//Find out if an object is a prototype of another object
+if(Object.getPrototypeOf(bird) === animal) {
+  console.log("The bird is an animal");
+} else {
+  console.log("The bird is not an animal");
+}
+
+//Access properties and methods in an object's prototype
+console.log(Object.getPrototypeOf(bird).say);
+
+</script>

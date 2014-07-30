@@ -1,0 +1,28 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Define properties using a data descriptor</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+  
+let jar = {};
+Object.defineProperty(jar, "cookies", {
+  value: 10,
+  writeable: false,
+  enumerable: true,
+  configurable: true
+});
+console.log(jar.cookies);
+
+//Displays:
+//10
+
+jar.cookies = 38;
+console.log(jar.cookies);
+
+//Displays:
+//Uncaught TypeError: Cannot assign to read 
+//only property 'cookies' of #<Object>
+
+</script>

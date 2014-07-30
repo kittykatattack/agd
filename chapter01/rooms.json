@@ -1,0 +1,20 @@
+{
+  "closet": {
+    "id": 0,
+    "description": "A dark coat closet.",
+    "light": {
+      "on": false
+    },
+    "contents": [],
+    "exits": ["east"]
+  },
+  "livingRoom": {
+    "id": 1,
+    "description": "A living room in an old, rambling house.",
+    "light": {
+      "on": true
+    },
+    "contents": ["fireplace", "sofa", "dagger"],
+    "exits": ["west", "north", "south"]
+  }
+}

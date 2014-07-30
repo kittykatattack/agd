@@ -1,0 +1,28 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Using map</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+let words = ["fun", "boring", "exciting"];
+
+let betterWords = words.map(improveGrammar);
+
+function improveGrammar (word) {
+  return word + "ish";
+}
+
+
+//Ultra-compact
+//let betterWords = words.map(x => x + "ish");
+
+console.log(betterWords.toString());
+
+//Do the same thing using an array comprehension
+
+betterWords = [for (word of words) word + "ish"];
+console.log(betterWords.toString());
+
+</script>

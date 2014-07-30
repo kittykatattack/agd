@@ -1,0 +1,67 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Promises</title>
+<script src="traceur-compiler/bin/traceur.js"></script>
+<script src="traceur-compiler/src/bootstrap.js"></script>
+<script> traceur.options.experimental = true; </script>
+<script type="module">
+
+//# Basic promise usage
+//This is how the basic mechanism works.
+//Create a `new Promise` with `resolve` and `reject` parameters.
+//Call those parameters when a condition is met, or fails to be met
+
+let promise = new Promise((resolve, reject) => {
+  let x = 10;
+  //Try changing `x` to another number to see what happens when it's rejected
+  if (x === 10) {
+    resolve("promise resolved");
+  } else {
+    reject("promise rejected");
+  }
+});
+
+promise.then(
+  (resolve) => {
+    console.log(resolve);
+  },
+  (reject) => {
+    console.log(reject);
+  }
+);
+
+
+//# Using a promise with XHR
+
+let rooms = {};
+
+//Create the promise
+let loadingPromise = new Promise((resolve, reject) => {
+  let xhr = new XMLHttpRequest();
+  xhr.open("GET", "rooms.json", true);
+  xhr.responseType = 'text';
+  xhr.onload = (event) => {
+    if (xhr.status === 200) {
+      rooms = JSON.parse(xhr.responseText);
+      resolve("JSON data loaded");
+    }
+    else {
+      reject("The JSON file didn't load");
+    }
+  };
+  xhr.send();
+});
+
+//Use the promise
+loadingPromise.then(
+  (resolve) => {
+    console.log(resolve);
+    //Displays: JSON data loaded
+  }, 
+  (reject) => {
+    console.log(reject); 
+    //Displays: The JSON file didn't load
+  }
+);
+
+</script>
