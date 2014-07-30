@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Using find and findIndex</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+let instruments = ["guitar", "piano", "tabla", "ocarina", "tabla"];
+
+let found = instruments.find(x => x === "tabla");
+console.log(found);
+//Displays: tabla
+
+let index = instruments.findIndex(x => x === "tabla");
+console.log(index);
+//Displays: 2
+
+</script>

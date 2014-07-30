@@ -1,0 +1,48 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Freezing objects</title>
+
+<body></body>
+<script>
+  "use strict";
+
+  var animal = {
+    legs: 4,
+    eyes: 2,
+    say: "Huh?",
+    speak: function() {
+      console.log(this.say);
+    }
+  };
+  Object.freeze(animal);
+
+  //Try changing a property on the animal - you can't
+  animal.eyes = 8;
+  console.log(animal.eyes);
+
+  //Displays:
+  //2
+
+  //The properties will also be non-writable on 
+  //any new objects you create from animal.
+  //However, you can overwrite these settings
+
+  //Use the optional second argument on Object.create to
+  //Define the spider's eyes property and set writable 
+  //and configurable to true
+  
+  var spider = Object.create(animal, {
+    eyes: {
+      value: 8,
+      writable: true,
+      configurable: true,
+      enumberable: true
+    }
+  });
+
+  console.log(spider.eyes);
+
+  //Displays:
+  //8
+  
+</script>
