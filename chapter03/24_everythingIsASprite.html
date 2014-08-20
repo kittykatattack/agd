@@ -1,0 +1,427 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Everything is a sprite</title>
+<style>
+/*
+@font-face {
+  font-family: puzzler;
+  src: url("fonts/puzzler.otf");
+}
+*/
+</style>
+<body>
+<script src="library/plugins/traceur-compiler/bin/traceur.js"></script>
+<script src="library/plugins/traceur-compiler/src/bootstrap.js"></script>
+<script> traceur.options.experimental = true; </script>
+<script type="module">
+
+//Font.js and requestAnimationFrame polyfill (rAF)
+import "library/plugins/Font.js/Font";
+import "library/plugins/rAF";
+
+//1. MAKE THE CANVAS 
+
+//Create a canvas element and its context
+
+function makeCanvas(config) {
+  //Set the config objet's values, or, if they're undefined,
+  //set default values
+  let config = config || {},
+    width = config.width || "256",
+    height = config.height || "256",
+    border = config.border || "1px dashed black",
+    backgroundColor = config.backgroundColor || "white";
+  
+  //Make the canvas element and add it to the DOM
+  let canvas = document.createElement("canvas");
+  canvas.setAttribute("width", width);
+  canvas.setAttribute("height", height);
+  canvas.style.border = border;
+  canvas.style.backgroundColor = backgroundColor;
+  document.body.appendChild(canvas);
+  
+  //Create the context as a property of the canvas
+  canvas.ctx = canvas.getContext("2d");
+  
+  //Return the canvas
+  return canvas;
+}
+
+//Make the canvas using default properties
+//You can access the context as `canvas.ctx`
+let canvas = makeCanvas();
+
+//Optionally customize the canvas with a configuration object
+/*
+let canvas = makeCanvas({
+  width: 500,
+  height: 400,
+  border: "none",
+  backgroundColor: "black"
+});
+*/
+
+/* Here's how to load a font using Font.js
+let puzzler = new Font();
+puzzler.src = "fonts/puzzler.otf";
+puzzler.onload = function () {
+  console.log("font loaded");
+}
+*/
+
+//2. LOAD THE ASSETS
+
+//The asset loader
+let assets = {
+  // Properties to help track the assets being loaded
+  toLoad: 0,
+  loaded: 0,
+
+  //File extensions for different types of assets
+  imageExtensions: ["png", "jpg", "gif"],
+  fontExtensions: ["ttf", "otf", "ttc", "woff"],
+
+  //The callback function that should run when all assets have loaded.
+  //Assign this when you load the fonts, 
+  //like this: `assets.whenLoaded = makeSprites;`
+  whenLoaded: undefined,
+
+  //The load method creates and loads all the assets. Use it like this:
+  //`assets.load(["images/anyImage.png", "fonts/anyFont.otf"]);`
+  load(sources) {
+    console.log("Loading assets...");
+    //Find the number of files that need to be loaded
+    this.toLoad = sources.length;
+   
+    sources.forEach((source) => {
+      //Find the file extension of the asset
+      let extension = source.split('.').pop();
+
+      //Load images that have file extensions that match. 
+      //the imageExtensions array
+      if (this.imageExtensions.indexOf(extension) !== -1) {
+        //Create a new image and add a loadHandler
+        let image = new Image(); 
+        image.addEventListener("load", this.loadHandler.bind(this), false);
+        //Get the image file name
+        image.name = source.split("/").pop();
+        //Assign the image as a property of the assets object so
+        //we can access it like this: `assets["imageName.png"]`
+        this[image.name] = image;
+        //Set the image's src property so we can start loading the image
+        image.src = source;
+      }
+
+      //Load fonts that have file extensions that match 
+      //the fontExtensions array 
+      else if (this.fontExtensions.indexOf(extension) !== -1) {
+        //Create a new font using font.js (https://github.com/Pomax/Font.js)
+        let font = new Font();
+        //Use the font's file name as the fontFamily name
+        font.fontFamily = source.split("/").pop().split(".")[0];
+        //Set the loadHander and assign the source to start 
+        //loading the font
+        font.onload = this.loadHandler.bind(this);
+        font.src = source;
+      }
+
+      //Display a message if a file type isn't recognized
+      else {
+        throw new Error("File type not recognized: " + source);
+      }
+    });
+  },
+
+  //The loadHandler will be called each time an 
+  //asset finishes loading
+  loadHandler() {
+    this.loaded += 1;
+    console.log(this.loaded);
+    //Check whether everything has loaded
+    if (this.toLoad === this.loaded) {
+      //If it has, run the callback function that was
+      //assigned to the `whenLoaded` property
+      this.whenLoaded();
+      //Reset `toLoad` and `loaded` in case you need to load
+      //something else later
+      this.toLoad = 0;
+      this.loaded = 0;
+      console.log("Assets finished loading");
+    }
+  }
+};
+
+//Load the assets
+assets.load(["images/tileset.png", "fonts/puzzler.otf"]);
+assets.whenLoaded = makeSprites;
+
+//3. DEFINE THE SPRITE PROTOTYPES
+
+//Create A sprites array to store all the sprites
+let sprites = [];
+
+//The Sprite class
+class Sprite {
+  constructor(config = {}) {
+    //The sprite's position
+    this.p = {
+      x: 0,
+      y: 0
+    };
+    //The sprite's velocity
+    this.v = {
+      x: 0,
+      y: 0
+    };
+    //Dimensions
+    this.width = 64;
+    this.height = 64;
+    //Orientation
+    this.rotation = 0;
+    //Visibility
+    this.alpha = 1;
+    this.visible = true;
+    //Line and color
+    this.strokeStyle = "black";
+    this.lineWidth = 1;
+    this.fillStyle = "rgba(128; 128, 128, 1)";
+    //Does this sprite scroll?
+    this.scroll = true;
+    //Copy the configuration properties onto the new object
+    Object.assign(this, config);
+    //Add this object to the `sprites` array
+    sprites.push(this);
+  }
+  //Getters that return useful points on the sprite
+  get halfWidth() {
+    return this.width / 2;
+  }
+  get halfHeight() {
+    return this.height / 2;
+  }
+  get center() {
+    return {
+      x: this.p.x + this.halfWidth,
+      y: this.p.y + this.halfHeight
+    };
+  }
+  get bottom() {
+    return {
+      x: this.p.x + this.halfWidth,
+      y: this.p.y + this.height
+    };
+  }
+}
+
+//Rectangle
+class Rectangle extends Sprite {}
+
+//Circle
+class Circle extends Sprite {
+  constructor(config) {
+    super(config);
+  }
+  //Diameter
+  get diameter() {return this.width}
+  set diameter(value) {this.width = value}
+  //Radius
+  get radius() {return this.halfWidth}
+  set radius(value) {this.width = value * 2} 
+}
+
+//Line
+class Line extends Sprite {
+  constructor(config) {
+    //Set default values for the start and end points
+    this.a = {x: 0, y: 0};
+    this.b = {x: 32, y: 32};
+    super(config);
+  }  
+}
+
+//Tile (to display images)
+class Tile extends Sprite {
+  constructor(config) {
+    super(config);
+    //Set default image properties if values for them weren't 
+    //specified when the object was created
+    this.image = this.image || {};
+    this.image.x = this.image.x || 0;
+    this.image.y = this.image.y || 0;
+    this.image.width = this.image.width || 64;
+    this.image.height = this.image.height || 64;
+    //Throw an error if the image.source wasn't included
+    if (!this.image.source) {
+      throw new Error(
+        `image.source required for ${this.constructor.name}`
+      );
+    }
+  }
+}
+
+//Text
+class Message extends Sprite {
+  constructor(config) {
+    this.text = "This is a Message sprite";
+    this.font = "16px sans-serif";
+    this.textBaseline = "top";
+    super(config)
+  }
+}
+
+//The makeSprites function will be called when 
+//all the assets have loaded
+function makeSprites() {
+  
+  //A rectangle sprite
+  let box = new Rectangle({
+    p: {x: 30, y: 30},
+    fillStyle: "rgba(105, 210, 231, 1)",
+    strokeStyle: "red",
+    lineWidth: 10,
+    rotation: 0.5
+  });
+  
+  //A circle sprite
+  let ball = new Circle({
+    p: {x: 150, y: 30},
+    diameter: 64,
+    fillStyle: "rgba(255, 171, 171, 1)",
+    lineWidth: 6
+  });
+  
+  //A line sprite
+  let line = new Line({
+    a: {x: 32, y: 160},
+    b: {x: 128, y: 100},
+    lineWidth: 6
+  });
+
+  //An image sprite
+  let rocket = new Tile({
+    image: {
+      source: assets["tileset.png"],
+      x: 192,
+      y: 128,
+    },
+    p: {x: 120, y: 140},
+    width: 64,
+    height: 64,
+    rotation: 0.5
+  });
+  
+  //A message sprite
+  let someText = new Message({
+    p: {x: 60, y: 220},
+    font: "16px puzzler",
+    text: "sprites!"
+  });
+
+  //Render the sprites
+  render(canvas);
+}
+
+//Render the sprites
+//The render function is called when all the sprites have been made
+
+function render(canvas) {
+  //Get a reference to the context
+  let ctx = canvas.ctx;
+  //Clear the canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  //Display the all the sprites 
+  for (let i = 0; i < sprites.length; i++) {  
+    let sprite = sprites[i];
+    if (sprite.visible) {
+
+      //Rectangle
+      if (sprite instanceof Rectangle) {
+        ctx.save();
+        ctx.strokeStyle = sprite.strokeStyle;
+        ctx.lineWidth = sprite.lineWidth;
+        ctx.fillStyle = sprite.fillStyle;
+        ctx.globalAlpha = sprite.alpha;
+        ctx.translate(
+          Math.floor(sprite.center.x),
+          Math.floor(sprite.center.y)
+        );
+        ctx.rotate(sprite.rotation);
+        ctx.beginPath();
+        //Draw the rectangle around the context's center point
+        ctx.rect(
+          Math.floor(-sprite.halfWidth), 
+          Math.floor(-sprite.halfHeight), 
+          sprite.width, 
+          sprite.height
+        );
+        ctx.stroke();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      //Circle
+      else if (sprite instanceof Circle) {
+        ctx.save();
+        ctx.strokeStyle = sprite.strokeStyle;
+        ctx.lineWidth = sprite.lineWidth;
+        ctx.fillStyle = sprite.fillStyle;
+        ctx.globalAlpha = sprite.alpha;
+        ctx.translate(
+          Math.floor(sprite.center.x),
+          Math.floor(sprite.center.y)
+        );
+        ctx.rotate(sprite.rotation);
+        ctx.beginPath();
+        ctx.arc(0, 0, sprite.radius, 0, 6.28, false);
+        ctx.stroke();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      //Line
+      else if (sprite instanceof Line) {
+        ctx.save();
+        ctx.strokeStyle = sprite.strokeStyle;
+        ctx.lineWidth = sprite.lineWidth;
+        ctx.globalAlpha = sprite.alpha;
+        ctx.beginPath();
+        ctx.moveTo(sprite.a.x, sprite.a.y);
+        ctx.lineTo(sprite.b.x, sprite.b.y);
+        ctx.stroke();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      //Tile
+      else if (sprite instanceof Tile) {
+        ctx.save();
+        ctx.globalAlpha = sprite.alpha;
+        ctx.translate(
+          Math.floor(sprite.center.x),
+          Math.floor(sprite.center.y)
+        );
+        ctx.rotate(sprite.rotation);
+        ctx.drawImage(
+          sprite.image.source,
+          sprite.image.x, sprite.image.y,
+          sprite.image.width, sprite.image.height,
+          Math.floor(-sprite.halfWidth), 
+          Math.floor(-sprite.halfHeight),
+          sprite.width, sprite.height
+        );
+        ctx.restore();
+      }
+
+      //Message
+      else if (sprite instanceof Message) {
+        ctx.font = sprite.font;
+        ctx.fillStyle = sprite.fillStyle;
+        ctx.textBaseline = sprite.textBaseline;
+        ctx.fillText(sprite.text, sprite.p.x, sprite.p.y);
+      }
+    }
+  }
+}
+
+</script>
+</body>

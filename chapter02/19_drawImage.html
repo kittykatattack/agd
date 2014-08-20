@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Using drawImage</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Create a canvas element and 2D drawing context called "ctx"
+let canvas = document.createElement("canvas");
+canvas.setAttribute("width", "256");
+canvas.setAttribute("height", "256");
+canvas.style.border = "1px dashed black";
+document.body.appendChild(canvas);
+let ctx = canvas.getContext("2d");
+  
+//Load an image
+let catImage = new Image();
+catImage.addEventListener("load", loadHandler, false);
+catImage.src = "images/cat.png";
+
+//The loadHandler is called when the image has loaded
+function loadHandler() {
+  //Draw the image
+  ctx.drawImage(catImage, 64, 64);
+}
+
+</script>
+

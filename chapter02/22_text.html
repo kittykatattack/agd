@@ -1,0 +1,47 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Text</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Create a canvas element and 2D drawing context called "ctx"
+let canvas = document.createElement("canvas");
+canvas.setAttribute("width", "256");
+canvas.setAttribute("height", "256");
+canvas.style.border = "1px dashed black";
+document.body.appendChild(canvas);
+let ctx = canvas.getContext("2d");
+  
+//Create a text string defines the content you want to display
+let content = "Hello World!";
+
+//Assign the font to the canvas context.
+//The first value is the font size, followed by the names of the
+//font families that should be tried:
+//1st choice, fall-back font, and system font fall-back
+ctx.font = "24px 'Rockwell Extra Bold', 'Futura', sans-serif";
+
+//Set the font color to red
+ctx.fillStyle = "red";
+
+//Figure out the width and height of the text
+var width = ctx.measureText(content).width,
+    height = ctx.measureText("M").width;
+
+//Set the text's x/y registration point to its top left corner
+ctx.textBaseline = "top";
+
+//Draw the text in the center of the canvas
+ctx.fillText(
+  content,                         //The text string
+  canvas.width / 2 - width / 2,    //The x position
+  canvas.height / 2 - height / 2   //The y position
+);
+
+//Display the text's width and height
+console.log(`text width: ${width} text height: ${height}`);
+//Displays: text width: 129 text height: 20
+  
+</script>
