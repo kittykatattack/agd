@@ -1,0 +1,339 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Scene graph</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Optionally, use the `makeCanvas` function
+//import the `makeCanvas` function from the `display` module
+//import {makeCanvas} from "../library/display";
+
+//`makeCanvas` arguments: width, height, border, backgroundColor
+//let canvas = makeCanvas();
+
+//Make the canvas element and add it to the DOM
+let canvas = document.createElement("canvas");
+canvas.width = 256;
+canvas.height = 256;
+canvas.style.border = "1px dashed black";
+canvas.style.backgroundColor = "white";
+document.body.appendChild(canvas);
+
+//Create the context as a property of the canvas
+let ctx = canvas.getContext("2d");
+
+//A function that returns a rectangle sprite
+let rectangle = function(
+  //Define the function's parameters and their default values
+  width = 32, height = 32, 
+  fillStyle = "gray", strokeStyle = "none", lineWidth = 0, 
+  x = 0, y = 0
+) {
+
+  //Create an object called `o` that is going to be returned by this
+  //function. Assign the function's arguments to it
+  let o = {width, height, fillStyle, strokeStyle, lineWidth};
+
+  //Create "private" position and alpha properties
+  o._x = x;
+  o._y = y;
+  o._gx = x;
+  o._gy = y;
+  o._alpha = 1;
+
+  //A private `_layer` property for depth layering
+  o._layer = 0;
+
+  //The sprite's width and height 
+  o.width = width;
+  o.height = height
+
+  //Add optional rotation, alpha, visible and scale properties
+  o.rotation = 0;
+  o.visible = true;
+  o.scaleX = 1;
+  o.scaleY = 1;
+
+  //Add `vx` and `vy` (velocity) variables that will help us move the sprite
+  o.vx = 0;
+  o.vy = 0;
+
+  //Create a `children` array on the sprite that will contain all the
+  //child sprites in this container
+  o.children = [];
+
+  //The sprite's `parent` property 
+  o.parent = undefined;
+
+  //The `addChild` method lets you add sprites to this container
+  o.addChild = sprite => {
+    //Remove the sprite from its current parent, if it has one, and
+    //the parent isn't already this object
+    if (sprite.parent) {
+      sprite.parent.removeChild(sprite);
+    }
+    //Make this object the sprite's parent and
+    //add it to this object's `children` array
+    sprite.parent = o;
+    o.children.push(sprite);
+  };
+
+  //The `removeChild` method lets you remove a sprite from its
+  //parent container
+  o.removeChild = sprite => {
+    if(sprite.parent === o) {
+      o.children.splice(o.children.indexOf(sprite), 1);
+    } else {
+      throw new Error(sprite + "is not a child of " + o);
+    }
+  };
+  
+  //Add a `render` method that explains how to draw the sprite
+  o.render = ctx => {
+    //Render the sprite
+    ctx.strokeStyle = o.strokeStyle;
+    ctx.lineWidth = o.lineWidth;
+    ctx.fillStyle = o.fillStyle;
+    ctx.beginPath();
+    ctx.rect(-o.width / 2, -o.height / 2, o.width, o.height);
+    ctx.closePath();
+    if (o.strokeStyle !== "none") ctx.stroke();    
+    ctx.fill();
+  };
+
+  //Getters and setters for the sprite's internal properties
+  Object.defineProperties(o, {
+    //`gx` and `gy` getters and setters represent the sprite's
+    //global coordinates
+    gx: {
+      get() {
+        return o._gx;
+      },
+      set(value) {
+        var currentX = o.gx;
+        if (o.children && o.children.length > 0) {
+          o.children.forEach(child => {
+            //The offset is equal to the difference between the
+            //container's `currentX` position and its new `value`
+            var offset = value - currentX;
+            child.gx += offset;
+          });
+        }
+        //Set the new x value.
+        o._gx = value;
+      },
+      enumerable: true, configurable: true
+    },
+    gy: {
+      get() {
+        return o._gy;
+      },
+      set(value) {
+        var currentY = o.gy;
+        if (o.children && o.children.length > 0) {
+          o.children.forEach(child => {
+            //The offset is equal to the difference between the
+            //container's `currentY` position and its new `value`
+            var offset = value - currentY;
+            child.gy += offset;
+          });
+        }
+        //Set the new y value
+        o._gy = value;
+      },
+      enumerable: true, configurable: true
+    },
+    //Get and set the local x and y position
+    //relative to this sprite's parent
+    x: {
+      get() {
+        if (o.parent) {
+          if (o.parent.gx > 0) {
+            return o.gx - o.parent.gx;
+          } else {
+            return Math.abs(o.parent.gx) + o.gx;
+          }
+        } else {
+          return o._gx; 
+        }
+      },
+      set(value){
+        if (o.parent) {
+          o.gx = o.parent.gx + value;
+        } else {
+          o.gx = value;
+        }
+      },
+      enumerable: true, configurable: true
+    },
+    y: {
+      get() {
+        if (o.parent) {
+          if (o.parent.gy > 0) {
+            return o.gy - o.parent.gy;
+          } else {
+            return Math.abs(o.parent.gy) + o.gy;
+          }
+        } else {
+          return o._gy; 
+        }
+      },
+      set(value) {
+        if (o.parent) {
+          o.gy = o.parent.gy + value;
+        } else {
+          o.gy = value;
+        }
+      },
+      enumerable: true, configurable: true
+    },
+    //An `alpha` getter/setter. The sprite's `alpha` (transparency) should match its
+    //parent's `alpha` value
+    alpha: {
+      get() {
+        if (o.parent) {
+          //Find out the sprite's alpha relative to its parent's alpha
+          var relativeAlpha = o.parent.alpha * o._alpha;
+          return relativeAlpha;
+        } else {
+          return o._alpha;  
+        }
+      },
+      set(value) {
+        o._alpha = value;
+      },
+      enumerable: true, configurable: true
+    },
+    //The sprite's depth layer. All sprites and groups have their depth layer
+    //set to `0` when their first created. If you want to force a
+    //sprite to appear above another sprite, set its `layer` to a
+    //higher number
+    layer: {
+      get() {
+        return o._layer;
+      },
+      set(value) {
+        o._layer = value;
+        if (o.parent) {
+          o.parent.children.sort((a, b) => a.layer - b.layer);
+        } 
+      },
+      enumerable: true, configurable: true
+    },
+  });
+
+  //Add the object as a child of the stage
+  if (stage) stage.addChild(o);
+
+  //Return the object
+  return o;
+};
+
+//Make the `stage`. It's the root container for all the sprites
+let stage = rectangle(canvas.width, canvas.height);
+
+let violetBox = rectangle(48, 48, "violet");
+violetBox.x = 64;
+violetBox.y = 80;
+
+let blueBox = rectangle(64, 64, "blue", "none", 0, 48, 32);
+blueBox.rotation = 0.2;
+blueBox.scaleX = 1.5;
+
+let goldBox = rectangle(20, 20, "gold", "none");
+
+//Add the `goldBox` as a child of the `blueBox`, and assign
+//its local x and y coordinates
+blueBox.addChild(goldBox);
+goldBox.x = 10;
+goldBox.y = 10;
+goldBox.rotation = 0.8;
+
+let redBox = rectangle(64, 64, "red", "black", 4, 160, 100);
+redBox.alpha = 0.5;
+redBox.scaleY = 2;
+
+let greenBox = rectangle(64, 64, "yellowGreen", "black", 2, 50, 150);
+greenBox.scaleX = 0.5;
+greenBox.rotation = 0.8;
+
+//Depth layering
+violetBox.layer = 1;
+//blueBox.layer = 2;
+
+//Render the sprites
+render(canvas, ctx, stage);
+
+//The renderer
+function render(canvas, ctx, stage) {
+
+  //Clear the canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+ 
+  //Align the canvas to the stage's dimensions
+  ctx.translate(
+    stage.x + stage.width / 2,
+    stage.y + stage.height / 2
+  );
+
+  //Loop through each sprite object in the `children` array
+  stage.children.forEach(sprite => {
+    //Display a sprite if it's visible
+    if (sprite.visible) {
+      displaySprite(sprite);
+    }
+  });
+
+  function displaySprite(sprite) {
+    //Save canvas's present state
+    ctx.save();
+
+    //Draw the sprite relative to its parent's position
+    ctx.translate(
+      sprite.gx + (sprite.width / 2) - sprite.parent.gx - (sprite.parent.height / 2),
+      sprite.gy + (sprite.height / 2) - sprite.parent.gy - (sprite.parent.height /2)
+    );
+    
+    //Set the sprite's `rotation`, `alpha` and `scale`
+    ctx.rotate(sprite.rotation);
+    ctx.globalAlpha = sprite.alpha;
+    ctx.scale(sprite.scaleX, sprite.scaleY);
+
+    //Use the sprite's own `render` method to draw the sprite
+    sprite.render(ctx);
+
+    //If the sprite contains child sprites in its
+    //`children` array, display them by calling this very same
+    //`displaySprite` function again.
+    if (sprite.children && sprite.children.length > 0) {
+      sprite.children.forEach(sprite => {
+        //display the child
+        displaySprite(sprite);
+      });
+    }
+
+    //Restore the canvas to its previous state
+    ctx.restore();
+  }
+}
+
+//`byLayer` is an array sort method that can be called when a sprite's
+//`layer` property is changed.
+function byLayer(a, b) {
+  //return a.layer - b.layer;
+  if (a.layer < b.layer) {
+    return -1;
+  } else if (a.layer > b.layer) {
+    return 1;
+  } else {
+    return 1;
+  }
+}
+
+
+</script>
+
+
+

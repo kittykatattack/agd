@@ -1,0 +1,252 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>All the sprites</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Optionally, use the `makeCanvas` function
+//import the `makeCanvas` function from the `display` module
+import {
+  makeCanvas, rectangle, circle, sprite,
+  line, group, text, stage, render, remove,
+  frame, frames
+} from "../library/display";
+
+import {assets} from "../library/utilities";
+
+//`makeCanvas` arguments: width, height, border, backgroundColor
+let canvas = makeCanvas(512, 512);
+
+//Assign a height and width to the `stage` object
+stage.width = canvas.width;
+stage.height = canvas.height;
+
+assets.load([
+  "fonts/puzzler.otf",
+  "images/cat.png",
+  "images/animals.json",
+  "images/fairy.png",
+  "images/tiger.png",
+  "images/hedgehog.png",
+  "images/button.json"
+]).then(() => setup());
+
+var blueBox, pinkBox, message, goldBox, grayBox, message;
+
+function setup() {
+
+  /*Parent-child relationships*/
+
+  //Make the first parent sprite: the blueBox
+  blueBox = rectangle(96, 96, "blue", "none", 0, 54, 64);
+  blueBox.pivotX = 0.25;
+  blueBox.pivotY = 0.25;
+
+  //Make the goldBox and add it as a child of the blueBox
+  goldBox = rectangle(64, 64, "gold");
+  blueBox.addChild(goldBox);
+
+  //Assign the goldBox's local coordinates (relative to the blueBox)
+  goldBox.x = 24;
+  goldBox.y = 24;
+
+  //Add a grayBox to the goldBox
+  grayBox = rectangle(48, 48, "gray");
+  goldBox.addChild(grayBox);
+  //use `setPosition` to quickly set the sprite's x and y values
+  grayBox.setPosition(8, 8);
+
+  //add a pinkBox to the grayBox
+  pinkBox = rectangle(24, 24, "pink");
+  grayBox.addChild(pinkBox);
+  pinkBox.x = 8;
+  pinkBox.y = 8;
+  pinkBox.pivotX = 0.75;
+  pinkBox.pivotY = 0.75;
+
+  //Remove the grayBox from the pinkBox and add the 
+  //pinkBox back to the stage
+  //grayBox.removeChild(pinkBox);
+  //stage.addChild(pinkBox);
+
+  //Display the `pinkBox's` gx and gy values
+  console.log(pinkBox.gx);
+  //Displays: 104
+  console.log(pinkBox.gy);
+  //Displays: 96
+
+  //Rotate the `blueBox`
+  blueBox.rotation = 0.8;
+
+  //Rotate the `grayBox`
+  grayBox.rotation = 0.3;
+
+  //Scale the `blueBox`
+  blueBox.scaleX = 1.5;
+
+  //Set the `blueBox`'s alpha
+  blueBox.alpha = 0.5
+
+  //Set the `grayBox`'s alpha
+  grayBox.alpha = 0.5;
+
+  /*Depth layering*/
+
+  let redBox = rectangle(64, 64, "red", "black", 4, 220, 180);
+  let greenBox = rectangle(64, 64, "yellowGreen", "black", 4, 200, 200);
+  let violetBox = rectangle(64, 64, "violet", "black", 4, 180, 220);
+
+  //Move the redBox to a higher layer
+  redBox.layer = 1;
+
+  //Swap the depths of the redBox and greenBox
+  stage.swapChildren(redBox, greenBox);
+
+  /*Positioning*/
+  //Create a box around which to center things
+  let limeBox = rectangle(64, 64, "lime");
+  limeBox.shadow = true;
+  limeBox.setPosition(350, 80);
+
+  //Create a box and position it above the limeBox
+  let brownBox = rectangle(32, 32, "brown");
+  limeBox.putTop(brownBox, 0, -16);
+
+  //Position a box to the right of the limeBox, offset
+  //by 16 pixels on the x axis
+  let navyBox = rectangle(32, 32, "navy");
+  limeBox.putRight(navyBox, 16);
+
+  //Position a box to the bottom of the limeBox and 
+  //offset it by 16 pixels on the y axis
+  let peruBox = rectangle(32, 32, "peru");
+  limeBox.putBottom(peruBox, 0, 16);
+
+  //Position a box to the left of the limeBox and
+  //offset it by -16 pixels on the x axis
+  let wheatBox = rectangle(32, 32, "wheat");
+  limeBox.putLeft(wheatBox, -16, 0);
+
+  //Center a box inside the limeBox
+  let hotPinkBox = rectangle(32, 32, "hotPink");
+  limeBox.putCenter(hotPinkBox);
+
+  //Test the `circular` property
+  limeBox.circular = true;
+  console.log(limeBox.diameter)
+  limeBox.circular = false;
+  console.log(limeBox.radius)
+
+  /* Circles */
+
+  let cyanCircle = circle(64, "cyan", "red", 4, 64, 280); 
+  //cyanCircle.pivotX = 0.75;
+  //cyanCircle.pivotY = 0.75;
+
+  /* Lines */
+  let blackLine = line("black", 4, 200, 64, 264, 128);
+  let redLine = line("red", 4, 200, 128, 264, 64);
+  let greenLine = line("green", 4, 264, 96, 200, 96);
+  let blueLine = line("blue", 4, 232, 128, 232, 64);
+
+  /* Text */
+  message = text("Hello World!", "24px Futura", "black", 330, 230); 
+  
+  //Change the words that a text sprite displays using the `content`
+  //property
+  //message.content = "Anything you like";
+
+  /* Groups */
+  let boxGroup = group(redBox, greenBox, violetBox);
+  //boxGroup.removeChild(redBox);
+  console.log(`group width: ${boxGroup.width} group height: ${boxGroup.height}`);
+
+  //The width and height of text won't be set 
+  //until the text is rendered
+  console.log(`width: ${message.width}`);
+  //Displays: width: 0
+  render(canvas);
+  console.log(`width: ${message.width}`);
+
+  /* Images */
+  //From an Image object
+  let cat = sprite(assets["images/cat.png"], 64, 410);
+  cat.width = 64;
+  cat.height = 64;
+
+  //From a texture atlas tilset frame
+  let tiger = sprite(assets["tiger.png"], 192, 410);
+  tiger.width = 64;
+  tiger.height = 64;
+  tiger.tiling = true;
+  tiger.tileX = 20;
+  tiger.tileY = 20;
+
+  //From a tileset frame
+  let fairyFrame = frame(
+    assets["images/fairy.png"],
+    0, 0, 48, 32
+  );
+
+  let fairy = sprite(fairyFrame, 164, 326);
+
+  //From multiple tileset frames
+  let fairyFrames = frames(
+    assets["images/fairy.png"],
+    [[0,0],[48,0],[96,0]],
+    48, 32
+  );
+
+  let fairy2 = sprite(fairyFrames, 224, 326);
+
+  //From an array of image objects
+  let animalImages = [
+    assets["images/hedgehog.png"],
+    assets["images/tiger.png"],
+    assets["images/cat.png"]
+  ];
+
+  let hedgehog = sprite(animalImages, 320, 410);
+  hedgehog.width = 64;
+  hedgehog.height = 64;
+
+  //From an array of texture atlas frames
+  let buttonFrames = [
+    assets["up.png"],
+    assets["over.png"],
+    assets["down.png"]
+  ];
+
+  let button = sprite(buttonFrames, 300, 280);
+
+  //Use `gotoAndStop` to set the sprite's frame number
+  fairy2.gotoAndStop(2);
+  button.gotoAndStop(1);
+
+  //Use the global `remove` method to remove any sprites from the
+  //game. They'll automatically be removed from the parents they
+  //belong to.
+  //remove(redBox, greenBox);
+
+  //Displays: width: 141.84375 
+  gameLoop();
+}
+
+
+//Render the sprites
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop, canvas);
+  blueBox.rotation += 0.01;
+  goldBox.rotation -= 0.02;
+  pinkBox.rotation += 0.03;
+  message.rotation += 0.01;
+  render(canvas);
+}
+</script>
+
+
+
+

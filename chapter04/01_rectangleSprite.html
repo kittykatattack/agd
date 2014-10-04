@@ -1,0 +1,136 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Rectangle sprite</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Optionally, use the `makeCanvas` function
+//import the `makeCanvas` function from the `display` module
+//import {makeCanvas} from "../library/display";
+
+//`makeCanvas` arguments: width, height, border, backgroundColor
+//let canvas = makeCanvas();
+
+//Make the canvas element and add it to the DOM
+let canvas = document.createElement("canvas");
+canvas.width = 256;
+canvas.height = 256;
+canvas.style.border = "1px dashed black";
+canvas.style.backgroundColor = "white";
+document.body.appendChild(canvas);
+
+//Create the context as a property of the canvas
+let ctx = canvas.getContext("2d");
+
+
+//An array to store all the sprites we're going to make
+let children = [];
+
+//A function that returns a rectangle sprite
+let rectangle = function(
+  //Define the function's parameters and their default values
+  width = 32, height = 32, 
+  fillStyle = "gray", strokeStyle = "none", lineWidth = 0, 
+  x = 0, y = 0
+) {
+
+  //Create an object called `o` that is going to be returned by this
+  //function. Assign the function's arguments to it
+  let o = {width, height, fillStyle, strokeStyle, lineWidth, x, y};
+
+  //Alternatively, you could use `Object.assign` to do the same thing
+  /*
+  let o = {};
+  Object.assign(
+    o, 
+    {width, height, fillStyle, strokeStyle, lineWidth, x, y}
+  );
+  */
+
+  //Add optional rotation, alpha, visible and scale properties
+  o.rotation = 0;
+  o.alpha = 1;
+  o.visible = true;
+  o.scaleX = 1;
+  o.scaleY = 1;
+
+  //Add `vx` and `vy` (velocity) variables that will help us move the sprite
+  o.vx = 0;
+  o.vy = 0;
+
+  //Add a `render` method that explains how to draw the sprite
+  o.render = ctx => {
+    //Render the sprite
+    ctx.strokeStyle = o.strokeStyle;
+    ctx.lineWidth = o.lineWidth;
+    ctx.fillStyle = o.fillStyle;
+    ctx.beginPath();
+    ctx.rect(-o.width / 2, -o.height / 2, o.width, o.height);
+    ctx.closePath();
+    if (o.strokeStyle !== "none") ctx.stroke();    
+    ctx.fill();
+  };
+
+  //Push the sprite object into the `children` array
+  children.push(o);
+
+  //Return the object
+  return o;
+};
+
+let blueBox = rectangle(64, 64, "blue", "none", 0, 32, 32);
+blueBox.rotation = 0.2;
+
+let redBox = rectangle(64, 64, "red", "black", 4, 160, 100);
+redBox.alpha = 0.5;
+redBox.scaleY = 2;
+
+let greenBox = rectangle(64, 64, "yellowGreen", "black", 2, 50, 150);
+greenBox.scaleX = 0.5;
+greenBox.rotation = 0.8;
+
+//Render the sprites
+render(canvas, ctx);
+
+//The renderer
+function render(canvas, ctx) {
+
+  //Clear the canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  //Loop through each sprite object in the `children` array
+  children.forEach(sprite => {
+    displaySprite(sprite);
+  });
+
+  function displaySprite(sprite) {
+    //Display a sprite if it's visible
+    if (sprite.visible) {
+      //Save canvas's present state
+      ctx.save();
+
+      //Shift the canvas to the sprite's position
+      ctx.translate(
+        sprite.x + sprite.width / 2,
+        sprite.y + sprite.height /2
+      );
+
+      //Set the sprite's `rotation`, `alpha` and `scale`
+      ctx.rotate(sprite.rotation);
+      ctx.globalAlpha = sprite.alpha;
+      ctx.scale(sprite.scaleX, sprite.scaleY);
+
+      //Use the sprite's own `render` method to draw the sprite
+      sprite.render(ctx);
+
+      //Restore the canvas to its previous state
+      ctx.restore();
+    }
+  }
+}
+
+</script>
+
+
