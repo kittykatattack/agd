@@ -1,0 +1,149 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Bricks</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {makeCanvas, circle, rectangle, stage, grid, render} from "../library/display";
+import {circleRectangleCollision, hit} from "../library/collision";
+import {randomInt, contain} from "../library/utilities";
+
+//Declare any variables shared between functions
+let canvas, ball, bricks, message, pointer;
+
+//Make the canvas and initialize the stage
+canvas = makeCanvas(256, 256);
+stage.width = canvas.width;
+stage.height = canvas.height;
+
+//Figure out a random diameter for the falling ball
+let randomDiameter = randomInt(8, 32);
+
+//Create the ball using the random diameter
+ball = circle(randomDiameter, "red");
+
+//Position the ball randomly somewhere across the top of the canvas
+ball.x = randomInt(0, canvas.width - ball.diameter);
+ball.y = 0;
+
+//Set the ball's velocity
+ball.vx = randomInt(-3, 6);
+ball.vy = 0;
+
+//Set the ball's gravity, friction and mass
+ball.gravity = 0.4;
+ball.frictionX = 1;
+ball.frictionY = 0;
+
+//Set the mass based on the ball's diameter
+ball.mass = 0.75 + (ball.diameter / 32);
+
+
+/*
+Create the grid of pegs using the `grid` function. `grid` returns a
+`group` sprite object that contains a sprite for every cell in the
+grid. You can define the rows and columns in the grid, whether or
+not the sprites should be centered inside each cell, or what their offset from the
+top left corner of each cell should be. Supply a function that
+returns the sprite that you want to make for each cell. You can
+supply an optional final function that runs any extra code after
+each sprite has been created. Here's the format for creating a grid:
+
+    gridGroup = grid(
+
+      //Set the grid's properties
+      columns, rows, cellWidth, cellHeight, 
+      areSpirtesCentered?, xOffset, yOffset,
+
+      //A function that returns a sprite
+      () => g.circle(16, "blue"),
+
+      //An optional final function that runs some extra code
+      () => console.log("extra!")
+    );
+*/
+
+bricks = grid(
+  //Set the grid's properties
+  5, 4, 48, 48, 
+  true, 0, 0,
+  //A function that describes how to make each peg in the grid.
+  //A random diameter and color is selected for each one
+  () => {
+    let brick = rectangle(randomInt(8, 32), randomInt(8, 32));
+    let colors = [
+      "#FFABAB", "#FFDAAB", "#DDFFAB", 
+      "#ABE4FF", "#D9ABFF"
+    ];
+    brick.fillStyle = colors[randomInt(0, 4)];
+    return brick;
+  },
+  //Run any extra code after each peg is made, if you want to
+  () => console.log("extra!")
+);
+
+//Position the grid of pegs
+bricks.setPosition(8, 48);
+
+//Start the game loop
+gameLoop();
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  //Apply gravity to the ball's vertical velocity
+  ball.vy += ball.gravity;
+  
+  //Apply friction. ball.frictionX will be 0.96 if the ball is
+  //on the ground, and 1 if it's in the air
+  ball.vx *= ball.frictionX;
+
+  //Move the ball by applying the new calculated velocity
+  //to the ball's x and y position
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+
+  //Check for a collision with the ball and the stage's boundary, and
+  //make the ball bounce by setting setting the last argument 
+  //in the `contain` method to `true`
+  var stageCollision = contain(ball, stage.localBounds, true);
+
+  //If the ball hit the bottom of the stage, add some so
+  //that the ball gradually rolls to a stop
+  if(stageCollision === "bottom") {
+    ball.frictionX = 0.96;
+  } else {
+    ball.frictionX = 1;
+  }
+
+
+  //Check for a collision between the ball and the bricks
+  bricks.children.forEach(brick => {
+    
+    //Make the ball bounce if it hits any of the pegs. Use the 
+    //`circleCollision` function to check for collisions between
+    //a moving circle and a stationary circle. Set the third argument to
+    //`true` to make the circle from bounce, and set the fourth
+    //argument to `true` if you want to use the circle's global x/y
+    //coordinates. (The global coordinates will be used by default)
+    //`circleCollision` arguments:
+    //movingCircle, stationaryCircle, bounce?, globalCoordinates?
+    
+    circleRectangleCollision(ball, brick, true, true);
+  });
+
+  //Alternatively, use the universal `hit`function
+  //arguments: circle, arrayOfCircles, reactToCollision?,
+  //bounceApart?, global?
+  /*
+  hit(ball, bricks.children, true, true, true);
+  */
+
+  //Render the canvas
+  render(canvas);
+}
+</script>
+

@@ -1,0 +1,96 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Button</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {makeCanvas, button, buttons, frames, text, stage, render} from "../library/display";
+import {assets} from "../library/utilities";
+import {makePointer} from "../library/interactive";
+
+//Load a custom font
+assets.load([
+  "fonts/puzzler.otf",
+  "images/button.json"
+]).then(() => setup());
+
+//Declare any variables shared between functions
+let canvas, playButton, stateMessage, actionMessage, pointer;
+
+function setup() {
+  //Make the canvas and initialize the stage
+  canvas = makeCanvas(256, 256);
+  stage.width = canvas.width;
+  stage.height = canvas.height;
+
+  //Define the button's frames
+  let buttonFrames = [ 
+    assets["up.png"],
+    assets["over.png"],
+    assets["down.png"]
+  ];
+
+  //Make the button sprite
+  playButton = button(buttonFrames, 32, 96);
+
+  //Define the button's actions
+  playButton.over = () => console.log("over");
+  playButton.out = () => console.log("out");
+  playButton.press = () => console.log("pressed");
+  playButton.release = () => console.log("released");
+  playButton.tap = () => console.log("tapped");
+
+  //Add some message text
+  stateMessage = text("State:", "12px puzzler", "black", 12, 12);
+  actionMessage = text("Action:", "12px puzzler", "black", 12, 32);
+
+  //Make the pointer
+  pointer = makePointer(canvas);
+
+  //Start the game loop
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+  
+  //Only run the code if there are buttons in the array
+  if (buttons.length > 0) {
+     
+    //Set the mouse pointer to the default arrow icon
+    canvas.style.cursor = "auto";
+
+    //Loop through all the buttons
+    buttons.forEach(button => {
+
+      //Update the buttons
+      button.update(pointer, canvas);
+
+      //Figure out if the mouse arrow should be a hand icon
+      if (button.state === "over" || button.state === "down") {
+
+        //If the button (or interactive sprite) isn't the
+        //stage, change the cursor to a pointer. 
+        //(This works because the `stage` object has a 
+        //`parent` value of `undefined`)
+        if(button.parent !== undefined) {
+
+          //Display the mouse arrow as a hand
+          canvas.style.cursor = "pointer";
+        }
+      }
+    });
+  }
+ 
+  //Display the button's state and action
+  stateMessage.content = `State: ${playButton.state}`;
+  actionMessage.content = `Action: ${playButton.action}`;
+
+  //Render the canvas
+  render(canvas);
+}
+</script>
+

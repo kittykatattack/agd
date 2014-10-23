@@ -1,0 +1,85 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Rotate around something</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {makeCanvas, circle, rectangle, line, stage, render} from "../library/display";
+import {assets, rotateSprite, rotatePoint} from "../library/utilities";
+import {makePointer} from "../library/interactive";
+
+
+//Declare any variables shared between functions
+let canvas, box, ball, movingLine, pointer;
+
+//Make the canvas and initialize the stage
+canvas = makeCanvas(256, 256);
+stage.width = canvas.width;
+stage.height = canvas.height;
+
+//Create a box and position it
+box = rectangle(32, 32, "gray");
+stage.putCenter(box, 32, -48);
+
+//Create a circle sprite offset by 32 pixels to the 
+//left of the box
+ball = circle(32, "gray");
+box.putLeft(ball, -32);
+
+//Add an `angle` property to the ball that we'll use to 
+//help make the ball rotate around the box
+ball.angle = 0;
+
+//Optionally make the ball a child of the box
+//box.addChild(ball);
+
+movingLine = line("black", 4, 64, 160, 192, 208);
+
+//We're going to make the line's start and end points
+//rotate in space. The line will need two new angle properties 
+//to help us do this. Both are initialized to 0
+movingLine.angleA = 0;
+movingLine.angleB = 0;
+
+//Make the pointer
+pointer = makePointer(canvas);
+
+//Start the game loop
+gameLoop();
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  //Update the ball’s rotation angle  
+  ball.angle += 0.05;
+
+  //Use the ball’s `angle` value to make it rotate around the
+  //box at a distance of 48 pixels from the box’s center
+  rotateSprite(ball, box, 48, ball.angle); 
+
+  //Make the line's `ax` and `ay` points rotate clockwise around
+  //point 64, 160. Use the `rotatePoint` method to help you do this. 
+  //`rotatePoint` returns an object with `x` and `y` properties
+  //containing the point's new rotated position
+  movingLine.angleA += 0.02;
+  let rotatingA = rotatePoint(64, 160, 20, 20, movingLine.angleA);
+  movingLine.ax = rotatingA.x;
+  movingLine.ay = rotatingA.y;
+
+  //Make the line's `bx` and `by` point rotate counter
+  //clockwise around point 192, 208
+  movingLine.angleB -= 0.03;
+  let rotatingB = rotatePoint(192, 208, 20, 20, movingLine.angleB);
+  movingLine.bx = rotatingB.x;
+  movingLine.by = rotatingB.y;
+
+
+  //Render the canvas
+  render(canvas);
+}
+</script>
+
+

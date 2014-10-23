@@ -1,0 +1,77 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Distance</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {makeCanvas, text, circle, line, stage, render} from "../library/display";
+import {assets, distance} from "../library/utilities";
+import {makePointer} from "../library/interactive";
+
+//Load a custom font
+assets.load(["fonts/puzzler.otf"]).then(() => setup());
+
+//Declare any variables shared between functions
+let canvas, c1, c2, message, connection, pointer;
+
+function setup() {
+  //Make the canvas and initialize the stage
+  canvas = makeCanvas(256, 256);
+  stage.width = canvas.width;
+  stage.height = canvas.height;
+
+  //Make a text sprite
+  message = text("", "12px puzzler", "black", 8, 8);
+
+  //Create a circle sprite offset by 32 pixels to the 
+  //left and top of the stage
+  c1 = circle(32, "gray");
+  stage.putCenter(c1, -32, -32);
+
+  //Create a circle sprite offset by 32 pixels to the
+  // right and bottom of the stage
+  c2 = circle(32, "gray");
+  stage.putCenter(c2, 32, 32);
+
+  //Create a line between the centers of the circles
+  connection = line(
+    "black", 2, c1.centerX, c1.centerY, c2.centerX, c2.centerY
+  );
+
+  //Make the pointer
+  pointer = makePointer(canvas);
+
+  //Start the game loop
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  //Keep the center of c2 aligned to the
+  //pointer's position
+  c2.x = pointer.x - c2.halfWidth;
+  c2.y = pointer.y - c2.halfHeight;
+
+  //Draw the connecting line between the circles
+  connection.ax = c1.centerX;
+  connection.ay = c1.centerY;
+  connection.bx = c2.centerX;
+  connection.by = c2.centerY;
+
+  //Use the imported `distance` function to figure
+  //out the distance between the circles
+  let distanceBetweenCircles = distance(c1, c2);
+
+  //Use the message text sprite to display the distance.
+  //Use `Math.floor` to truncate the decimal values
+  message.content = Math.floor(distanceBetweenCircles);
+  
+  //Render the canvas
+  render(canvas);
+}
+</script>
+

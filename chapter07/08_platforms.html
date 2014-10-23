@@ -1,0 +1,596 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Platforms</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {
+  makeCanvas, rectangle, sprite, group, text, 
+  frame, stage, render, remove
+} from "../library/display";
+import {assets, randomInt} from "../library/utilities";
+import {keyboard} from "../library/interactive";
+import {rectangleCollision, hitTestRectangle, hit} from "../library/collision";
+
+//Load a custom font
+assets.load([
+  "fonts/puzzler.otf",
+  "images/platforms.json"
+]).then(() => setup());
+
+//Declare any variables shared between functions
+let canvas, level, world, player, message, 
+    score, leftArrow, rightArrow, space;
+
+function setup() {
+  //Make the canvas and initialize the stage
+  canvas = makeCanvas(512, 512);
+  stage.width = canvas.width;
+  stage.height = canvas.height;
+
+  //Create a `level` object with some basic data about the game world
+  level = {
+
+    //The height and width of the level, in tiles
+    widthInTiles: 16,
+    heightInTiles: 16,
+
+    //The width and height of each tile, in pixels
+    tilewidth: 32,
+    tileheight: 32,
+  };
+
+  //Use the level to make the game world. See the `makeWorld` function
+  //below for details on how it works. It creates a random platform
+  //game environment procedurally. It returns a `group` sprite that
+  //contains all the game objects we'll need.
+  world = makeWorld(level);
+
+  //Get a reference to the `player` sprite
+  player = world.player;
+
+  //Add some text to display the score
+  message = text("score: ", "16px puzzler", "white", 32, 8);
+
+  //Initialize the game score
+  score = 0;
+
+  //Assign the player's keyboard keys
+  leftArrow = keyboard(37);
+  rightArrow = keyboard(39);
+  space = keyboard(32);
+
+  //Left arrow key
+  leftArrow.press = () => {
+    if(rightArrow.isUp) {
+      player.accelerationX = -0.2;
+    }
+  };
+  leftArrow.release = () => {
+    if(rightArrow.isUp) {
+      player.accelerationX = 0;
+    }
+  };
+  //Right arrow key
+  rightArrow.press = () => {
+    if(leftArrow.isUp) {
+      player.accelerationX = 0.2;
+    }
+  };
+  rightArrow.release = () => {
+    if(leftArrow.isUp) {
+      player.accelerationX = 0;
+    }
+  };
+  //Space key (jump)
+  space.press = () => {
+    if(player.isOnGround) {
+      player.vy += player.jumpForce;
+      player.isOnGround = false;
+      player.frictionX = 1;
+    }
+  };
+  
+  //Start the game loop
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+  
+  //Run the game logic
+  play();
+
+  //Render the canvas
+  render(canvas);
+}
+
+function play() {
+  //Regulate the amount of friction acting on the player.
+  //The is the most important variable to set if you want to
+  //fine-tune the feel of the player control
+  if (player.isOnGround) {
+
+    //Add some friction if the player is on the ground
+    player.frictionX = 0.92;
+  } else {
+
+    //Add less friction if it's in the air
+    player.frictionX = 0.97;
+  }
+
+  //Apply the acceleration
+  player.vx += player.accelerationX; 
+  player.vy += player.accelerationY;
+  
+  //Apply friction
+  player.vx *= player.frictionX; 
+  
+  //Apply gravity
+  player.vy += player.gravity;
+  
+  //Move the player
+  player.x += player.vx;
+  player.y += player.vy;
+
+
+  //Use `forEach` and the `rectangleCollision` 
+  //method to let the player jump on platforms
+  //Check for collisions between the player and the platforms
+  world.platforms.forEach(platform => {
+
+    //Use `rectangleCollision` to prevent the player and platforms
+    //from overlapping  
+    let collision = rectangleCollision(player, platform);
+    
+    //Use the `collision` variable to figure out what side of the player
+    //is hitting the platform
+    if (collision) {
+      if(collision === "bottom" && player.vy >= 0) {
+
+        //Tell the game that the player is on the ground if 
+        //it's standing on top of a platform
+        player.isOnGround = true;
+
+        //Neutralize gravity by applying its
+        //exact opposite force to the character's vy
+        player.vy = -player.gravity;
+      }
+      else if(collision === "top" && player.vy <= 0) {
+        player.vy = 0;
+      }
+      else if(collision === "right" && player.vx >= 0) {
+        player.vx = 0;
+      }
+      else if(collision === "left" && player.vx <= 0) {
+        player.vx = 0;
+      }
+
+      //Set `isOnGround` to `false` if the bottom of the player
+      //isn't touching the platform
+      if(collision !== "bottom" && player.vy > 0) {
+        player.isOnGround = false;
+      }
+    }
+  });
+
+  //Alternatively, use the universal `hit` method to do the same thing
+  
+  /*
+  let playerVsPlatforms = hit(
+    player, world.platforms, true, false, false,
+    (collision, platform) => {
+      //Use the collision variable to figure out what side of the player
+      //is hitting the platform
+      if(collision === "bottom" && player.vy >= 0) {
+        //Tell the game that the player is on the ground if 
+        //it's standing on top of a platform
+        player.isOnGround = true;
+        //Neutralize gravity by applying its
+        //exact opposite force to the character's vy
+        //player.vy = -player.gravity;
+        player.vy = -player.gravity;
+      }
+      else if(collision === "top" && player.vy <= 0) {
+        player.vy = 0;
+      }
+      else if(collision === "right" && player.vx >= 0) {
+        player.vx = 0;
+      }
+      else if(collision === "left" && player.vx <= 0) {
+        player.vx = 0;
+      }
+      //Set `isOnGround` to `false` if the bottom of the player
+      //isn't touching the platform
+      if(collision !== "bottom" && player.vy > 0) {
+        player.isOnGround = false;
+      }
+    }
+  );
+  */
+  
+  
+  //Treasure collection
+  //Use `filter` and `hit` to check whether the player is touching a
+  //treasure sprite (a yellow box or star). If it is, add 1 to the score, remove the sprite and filter it out of the 
+  //`world.treasure` array
+  world.treasure = world.treasure.filter(box => {
+
+    //Check for a collision between the player and the treasure
+    if (hitTestRectangle(player, box)){
+
+      //Increase the score by 1
+      score += 1;
+
+      //Remove the treasure sprite
+      remove(box);
+
+      //Remove the treasure from the array
+      return false;
+    } else {
+      //Keep the treasure in the array
+      return true;
+    } 
+  });
+
+  //Display the score
+  message.content = `score: ${score}`;
+
+  //That's it! The game code is finished here
+  //Just keep reading if you want to find out how the 
+  //`makeWorld` function works  
+}
+
+function makeWorld(level) {
+  //create the `world` object
+  let world = group();
+
+  //Add some arrays to the world that will store the objects that we're
+  //going to create
+  world.map = [];
+  world.itemLocations = [];
+  world.platforms = [];
+  world.treasure = [];
+
+  //Important world object that we're going to create
+  world.player = null;
+
+  //1. Make the map
+  makeMap();
+
+  //2. Terraform the map
+  terraformMap();
+
+  //3. Add the items
+  addItems();
+
+  //4. Make the sprites
+  makeImageSprites();
+
+  //If you want to see what the world looks likes using simple shapes,
+  //use `makeSprites` instead of `makeImageSprites`
+  //makeSprites();
+
+  function makeMap() {
+
+    //The `cellIsAlive` helper function.
+    //Give each cell a 1 in 4 chance to live. If it's "alive", it will
+    //be rock, if it's "dead" it will be sky.
+    //`cellIsAlive` will be `undefined` unless the random number is 0
+    let cellIsAlive = () => randomInt(0, 3) === 0;
+    
+    //A loop creates a `cell` object for each 
+    //grid cell on the map. Each `cell` has a name, and an `x` and `y` 
+    //position. The loop uses the `cellIsAlive` function to
+    //give each cell a 25% chance of being "rock" and a 75% 
+    //chance of being "sky"
+
+    //First, figure out the number of cells in the grid
+    let numberOfCells = level.heightInTiles * level.widthInTiles;
+
+    //Next, create the cells in a loop
+    for (let i = 0; i < numberOfCells; i++) {
+
+      //Figure out the x and y position
+      let x = i % level.widthInTiles,
+          y = Math.floor(i / level.widthInTiles);
+
+      //Create the `cell` object 
+      let cell = {
+        x: x,
+        y: y,
+        item: ""
+      };
+
+      //Decide whether the cell should be "rock" or "sky"
+      if (cellIsAlive()) {
+        cell.terrain = "rock";
+      } else {
+        cell.terrain = "sky";
+      }
+
+      //Push the cell into the world's `map` array
+      world.map.push(cell);
+    }
+  }
+
+  function terraformMap() {
+    //Improve the map by adding a border and grass
+
+    //A `getIndex` helper function to convert the cell x and y position to an
+    //array index number
+    let getIndex = (x, y) => x + (y * level.widthInTiles);
+    
+    world.map.forEach((cell, index, map) => {
+      //Some variables to help find the cells to the left, right, below
+      //and above the current cell
+      let cellToTheLeft = world.map[getIndex(cell.x - 1, cell.y)],
+          cellToTheRight = world.map[getIndex(cell.x + 1, cell.y)],
+          cellBelow = world.map[getIndex(cell.x, cell.y + 1)],
+          cellAbove = world.map[getIndex(cell.x, cell.y - 1)],
+          cellTwoAbove = world.map[getIndex(cell.x, cell.y - 2)];
+
+      //If the cell is on the border of the map, change its name to "border"
+      if (cell.x === 0 || cell.y === 0 
+      || cell.x === level.widthInTiles - 1 
+      || cell.y === level.heightInTiles - 1) { 
+        cell.terrain = "border";
+      } 
+
+      //If the cell isn't on the border, find out if we can
+      //grow some grass on it. Any rock with a sky cell above
+      //it should be made into grass. Here's how to figure this out:
+      else { 
+        
+        //1. Is the cell a rock?
+        if (cell.terrain === "rock") {
+
+          //2. Is there sky directly above it?
+          if (cellAbove && cellAbove.terrain === "sky") {
+
+            //3. Yes there is, so change its name to "grass" 
+            cell.terrain = "grass";
+
+            //4. Make sure there are 2 sky cells above grass cells
+            //so that it's easy to jump to higher platforms
+            //without bumping your head. Change any rock cells that are
+            //2 above the current grass cell to "sky"
+            if (cellTwoAbove) {
+              if (cellTwoAbove.terrain === "rock"
+              || cellTwoAbove.terrain === "grass") {
+                cellTwoAbove.terrain = "sky";
+              } 
+            }
+          }
+        }
+      }
+    });
+
+    //We now have the finished map.
+    //Next, we're going to loop through the map one more time 
+    //to find all the item location cells and push them into the 
+    //`itemLocations` array. `itemLocations` is a list of cells that
+    //we'll use later to place the player and treasure on the map
+    world.map.forEach((cell, index, map) => {
+
+      //Is the cell a grass cell?
+      if (cell.terrain === "grass") {
+
+        //Yes, so find the cell directly above it and push it
+        //into the `itemLocations` array
+        let cellAbove = world.map[getIndex(cell.x, cell.y - 1)];
+        world.itemLocations.push(cellAbove);
+      }
+    });  
+  }
+
+  function addItems() {
+
+    //The `findStartLocation` helper function returns a random cell
+    let findStartLocation = () => {
+
+      //Randomly choose a start location from the `itemLocations` array
+      let randomIndex = randomInt(0, world.itemLocations.length - 1);
+      let location = world.itemLocations[randomIndex];
+
+      //Splice the cell from the array so we don't choose the
+      //same cell for another item
+      world.itemLocations.splice(randomIndex, 1);
+      return location;
+    };
+
+    //1. Add the player
+    //Find a random cell from the `itemLocations` array
+    let cell = findStartLocation();
+    cell.item = "player";
+    
+    //2. Add 3 treasure boxes
+    for (let i = 0; i < 3; i++) {
+      cell = findStartLocation();
+      cell.item = "treasure";
+    }
+    //console.table(world.map);
+  }
+
+  function makeImageSprites() {
+    //The `map` and `gameObjects` arrays are complete, so we can
+    //now use them to create the sprites. 
+    //All the map sprites will use the same x, y, width and 
+    //height values as the cell objects in those arrays. 
+    //rock, grass and border sprites will be pushed into the 
+    //`platforms` array so that we can use them for collision in the game loop
+    
+    //Make the terrain
+    world.map.forEach((cell, index, map) => {
+      let mapSprite,
+          x = cell.x * level.tilewidth,
+          y = cell.y * level.tileheight;
+
+      switch (cell.terrain) {
+        case "rock":
+          mapSprite = sprite(assets["rock.png"]);
+          mapSprite.setPosition(x, y);
+          world.platforms.push(mapSprite);
+          break;
+          
+        case "grass":
+          mapSprite = sprite(assets["grass.png"]);
+          mapSprite.setPosition(x, y);
+          world.platforms.push(mapSprite);
+          break;
+          
+        case "sky":
+          //Add clouds every 6 cells and only on the top
+          //80% of the level
+          let sourceY = 0;
+          if (index % 6 === 0 && index < map.length * 0.8) { 
+            mapSprite = sprite(assets["cloud.png"]);
+          } else {
+            mapSprite = sprite(assets["sky.png"]);
+          }
+          mapSprite.setPosition(x, y);
+          break;
+        
+        case "border":
+          mapSprite = rectangle(level.tilewidth, level.tileheight, "black");
+          mapSprite.setPosition(x, y);
+          world.platforms.push(mapSprite);
+          break;
+      }
+    });
+
+    //Make the game items. (Do this after the terrain so
+    //that the items sprites display above the terrain sprites)
+    world.map.forEach(cell => {  
+
+      //Each game object will be half the size of the cell.
+      //They should be centered and positioned so that they align
+      //with the bottom of cell
+      if (cell.item !== "") {
+        let mapSprite,
+            x = cell.x * level.tilewidth + level.tilewidth / 4,
+            y = cell.y * level.tileheight + level.tilewidth / 2,
+            width = level.tilewidth / 2,
+            height = level.tileheight / 2;
+        
+        switch (cell.item) {
+          case "player":
+            mapSprite = sprite(assets["cat.png"]);
+            mapSprite.width = width;
+            mapSprite.height = height;
+            mapSprite.setPosition(x, y);
+            mapSprite.accelerationX = 0;
+            mapSprite.accelerationY = 0;
+            mapSprite.frictionX = 1;
+            mapSprite.frictionY = 1;
+            mapSprite.gravity = 0.3;
+            mapSprite.jumpForce = -6.8;
+            mapSprite.vx = 0;
+            mapSprite.vy = 0;
+            mapSprite.isOnGround = true;
+            world.player = mapSprite;
+            break;
+          
+          case "treasure":
+            mapSprite = sprite(assets["star.png"]);
+            mapSprite.width = width;
+            mapSprite.height = height;
+            mapSprite.setPosition(x, y);
+
+            //Push the treasure into the `treasures` array
+            world.treasure.push(mapSprite);
+            break;
+        }
+      }
+    }); 
+  }
+
+  //`makeSprites` is an alternative to `makeImageSprites` that creates
+  //the sprites from simple squares and colors, in the style of a
+  //Commodore 64 or Vic 20.
+
+  function makeSprites() {
+    //The map and gameObjects arrays are complete, so we can
+    //now use them to create the sprites. 
+    //All the map sprites will use the same x, y, width and 
+    //height values as the cell objects in those arrays. 
+    //rock, grass and border sprites will be pushed into the 
+    //`platforms` array so that use them for collision in the game loop
+    
+    //Make the terrain
+    world.map.forEach(cell => {
+      let mapSprite = rectangle();
+      mapSprite.x = cell.x * level.tilewidth;
+      mapSprite.y = cell.y * level.tileheight;
+      mapSprite.width = level.tilewidth;
+      mapSprite.height = level.tileheight;
+
+      switch (cell.terrain) {
+        case "rock":
+          mapSprite.fillStyle = "black";
+          world.platforms.push(mapSprite);
+          break;
+          
+        case "grass":
+          mapSprite.fillStyle = "green";
+          world.platforms.push(mapSprite);
+          break;
+          
+        case "sky":
+          mapSprite.fillStyle = "cyan";
+          break;
+        
+        case "border":
+          mapSprite.fillStyle = "blue";
+          world.platforms.push(mapSprite);
+          break;
+      }
+    });
+
+    //Make the game items. (Do this after the terrain so
+    //that the items sprites display above the terrain sprites)
+    world.map.forEach(cell => {
+
+      //Each game object will be half the size of the cell.
+      //They should be centered and positioned so that they align
+      //with the bottom of cell
+      if(cell.item !== "") {
+        let mapSprite = rectangle();
+        mapSprite.x = cell.x * level.tilewidth + level.tilewidth / 4;
+        mapSprite.y = cell.y * level.tileheight + level.tilewidth / 2;
+        mapSprite.width = level.tilewidth / 2;
+        mapSprite.height = level.tileheight / 2;
+        
+        switch (cell.item) {
+          case "player":
+            mapSprite.fillStyle = "red";
+            mapSprite.accelerationX = 0;
+            mapSprite.accelerationY = 0;
+            mapSprite.frictionX = 1;
+            mapSprite.frictionY = 1;
+            mapSprite.gravity = 0.3;
+            mapSprite.jumpForce = -6.8;
+            mapSprite.vx = 0;
+            mapSprite.vy = 0;
+            mapSprite.isOnGround = true;
+            world.player = mapSprite;
+            break;
+          
+          case "treasure":
+            mapSprite.fillStyle = "gold";
+            //Push the treasure into the treasures array
+            world.treasure.push(mapSprite);
+            break;
+        }
+      }
+    }); 
+  }
+
+  //Return the `world` object
+  return world;
+}
+
+</script>

@@ -1,0 +1,189 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Marbles</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {
+  makeCanvas, sprite, circle, line, stage, 
+  grid, frames, render
+} from "../library/display";
+import {
+  circleCollision, hitTestPoint, multipleCircleCollision,
+  movingCircleCollision
+} from "../library/collision";
+import {
+  randomInt, contain, assets, 
+  distance, angle
+} from "../library/utilities";
+import {makePointer} from "../library/interactive";
+
+//Load the tileset containing the images
+assets.load(["images/marbles.png"]).then(() => setup());
+
+//Declare any variables shared between functions
+let canvas, sling, pointer, marbles, capturedMarble;
+
+//Make the canvas and initialize the stage
+canvas = makeCanvas(320, 320);
+canvas.style.backgroundColor = "black";
+stage.width = canvas.width;
+stage.height = canvas.height;
+
+function setup() {
+
+  //Create the grid of marbles
+  marbles = grid(
+    //Set the grid's properties
+    5, 5, 64, 64, 
+    true, 0, 0,
+
+    //A function that describes how to make each marble
+
+    () => {
+      //Define the marble frames 
+      let marbleFrames = frames(
+        assets["images/marbles.png"], 
+        [
+          [0,0],[32,0],[64,0],
+          [0,32],[32,32],[64,32]
+        ],
+        32, 32
+      );
+
+      //Initialize a marble with the frames
+      let marble = sprite(marbleFrames);
+
+      //Set the marble to a random frame
+      marble.gotoAndStop(randomInt(0, 5));
+
+      //Give it circular properties (`diameter` and `radius`)
+      marble.circular = true
+
+      //Give the marble a random diameter
+      let sizes = [8, 12, 16, 20, 24, 28, 32];
+      marble.diameter = sizes[randomInt(0, 6)];
+
+      //Give it a random initial velocity
+      marble.vx = randomInt(-10, 10);
+      marble.vy = randomInt(-10, 10);
+
+      //Assign the rest of the marble's physics properties
+      marble.frictionX = 0.99;
+      marble.frictionY = 0.99;
+      marble.mass = 0.75 + (marble.diameter / 32);
+
+      //Return the marble sprite so that it can
+      //added to the grid cell
+      return marble;
+    },
+
+    //Run any extra optional code after each peg is made, if you want to
+    () => {console.log("extra!");}
+  );
+
+  //Create the "sling" which is a line that will connect
+  //the pointer to the marbles
+  sling = line("Yellow", 4);
+  sling.visible = false;
+
+  //A variable to store the captured marble
+  capturedMarble = null;
+
+  //Make the pointer
+  pointer = makePointer(canvas);
+  
+  //Start the game loop
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  //If a marble has been captured, draw the 
+  //sling (the yellow line) between the pointer and
+  //the center of the captured marble
+  if (capturedMarble !== null) {
+    sling.visible = true;
+    sling.ax = capturedMarble.centerX;
+    sling.ay = capturedMarble.centerY;
+    sling.bx = pointer.x; 
+    sling.by = pointer.y;
+  }
+
+  //Shoot the marble if the pointer has been released 
+  if (pointer.isUp) { 
+    //Make the sling invisible when its released
+    sling.visible = false;
+    if (capturedMarble !== null) {
+      //Find out how long the sling is
+      sling.length = distance(capturedMarble, pointer);
+      //Get the angle between the center of the marble and the pointer
+      sling.angle = angle(pointer, capturedMarble);
+      //Shoot the marble away from the pointer with a velocity
+      //proportional to the sling's length
+      let speed = 5;
+      capturedMarble.vx = Math.cos(sling.angle) * sling.length / speed;
+      capturedMarble.vy = Math.sin(sling.angle) * sling.length / speed;
+      //Release the captured marble
+      capturedMarble = null;
+    }
+  }
+
+  marbles.children.forEach(marble => {
+    //Check for a collision with the pointer and marble
+    if (pointer.isDown && capturedMarble === null) {
+      if (hitTestPoint(pointer, marble)) {
+        //If there's a collision, capture the marble
+        capturedMarble = marble;
+        capturedMarble.vx = 0;
+        capturedMarble.vy = 0;
+      }
+    }
+
+    //Apply friction
+    marble.vx *= marble.frictionX;
+    marble.vy *= marble.frictionY;
+
+    //Move the marble by applying the new calculated velocity
+    //to the marble's x and y position
+    marble.x += marble.vx;
+    marble.y += marble.vy;
+
+    //Contain the marble inside the stage and make it bounce
+    //off the edges
+    contain(marble, stage.localBounds, true);
+  });
+
+  //Make each circle in the `marbles.children` array
+  //bounce off another circle in the same array
+
+  for (let i = 0; i < marbles.children.length; i++) {
+    //The first marble to use in the collision check 
+    var c1 = marbles.children[i];
+    for (let j = i + 1; j < marbles.children.length; j++) {
+      //The second marble to use in the collision check 
+      let c2 = marbles.children[j];
+      //Check for a collision and bounce the marbles apart if
+      //they collide. Use an optional mass property on the sprite
+      //to affect the bounciness of each marble
+      movingCircleCollision(c1, c2);
+    }
+  }
+  
+  
+  //You can alternatively check for for multiple circle collisions
+  //Using a single convenience method called `multipleCircleCollision`
+  //that you'll find in the `library/display` module
+  //multipleCircleCollision(marbles.children);
+  
+  //Render the canvas
+  render(canvas);
+}
+</script>
+
+
+

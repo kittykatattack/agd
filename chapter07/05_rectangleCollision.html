@@ -1,0 +1,72 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Rectangle collision</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {makeCanvas, rectangle, draggableSprites, text, stage, render} from "../library/display";
+import {assets} from "../library/utilities";
+import {makePointer} from "../library/interactive";
+import {hitTestRectangle, hit} from "../library/collision";
+
+//Load a custom font
+assets.load(["fonts/puzzler.otf"]).then(() => setup());
+
+//Declare any variables shared between functions
+let canvas, r1, r2, message, pointer;
+
+function setup() {
+  //Make the canvas and initialize the stage
+  canvas = makeCanvas(256, 256);
+  stage.width = canvas.width;
+  stage.height = canvas.height;
+
+  //Create a square
+  r1 = rectangle(64, 64, "red");
+  r1.draggable = true;
+  stage.putCenter(r1, -64);
+
+  //Create another square
+  r2 = rectangle(64, 64, "blue");
+  r2.draggable = true;
+  stage.putCenter(r2, 64);
+
+  //Add some message text
+  message = text("No collision...", "12px puzzler", "black", 12, 12);
+
+  //Make the pointer
+  pointer = makePointer(canvas);
+
+  //Start the game loop
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  pointer.updateDragAndDrop(draggableSprites);
+
+  if(hitTestRectangle(r1, r2)) {
+    message.content = "Collision!"
+  } else {
+    message.content = "No collision..."  
+  }
+
+  //Alternatively, use the universal `hit` function
+  /*
+  if(hit(r1, r2)) {
+    message.content = "Collision!"
+  } else {
+    message.content = "No collision..."  
+  }
+  */
+
+  //Render the canvas
+  render(canvas);
+}
+</script>
+
+

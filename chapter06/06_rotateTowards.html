@@ -1,0 +1,66 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Rotate towards</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {makeCanvas, rectangle, text, line, stage, render} from "../library/display";
+import {assets, angle} from "../library/utilities";
+import {makePointer} from "../library/interactive";
+
+//Load a custom font
+assets.load(["fonts/puzzler.otf"]).then(() => setup());
+
+//Declare any variables shared between functions
+let canvas, box, turret, message, pointer;
+
+function setup() {
+  //Make the canvas and initialize the stage
+  canvas = makeCanvas(256, 256);
+  stage.width = canvas.width;
+  stage.height = canvas.height;
+
+  //Make a square and center it in the stage
+  box = rectangle(32, 32, "gray", "black", 2);
+  stage.putCenter(box);
+
+  //Make a turret by drawing a red, 4 pixel wide 
+  //line that's 32 pixels long
+  turret = line("red", 4, 0, 0, 32, 0);
+
+  //Add the line as a child of the box and place its
+  //start point at the box's center
+  box.addChild(turret);
+  turret.x = 16;
+  turret.y = 16;
+
+  //Make a text sprite
+  message = text("", "12px puzzler", "black", 8, 8);
+
+  //Make the pointer
+  pointer = makePointer(canvas);
+
+  //Start the game loop
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  //Make the box and turret angle towards the pointer
+  box.rotation = angle(box, pointer);
+
+  //Display the box's angle of rotation
+  message.content = box.rotation;
+
+  //Render the canvas
+  render(canvas);
+}
+</script>
+
+
+
+

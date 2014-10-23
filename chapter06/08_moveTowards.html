@@ -1,0 +1,121 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Move towards</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {makeCanvas, rectangle, text, line, stage, group, render} from "../library/display";
+import {assets} from "../library/utilities";
+import {keyboard} from "../library/interactive";
+
+//Load a custom font
+assets.load(["fonts/puzzler.otf"]).then(() => setup());
+
+//Declare any variables shared between functions
+let canvas, tank, message, pointer;
+
+function setup() {
+  //Make the canvas and initialize the stage
+  canvas = makeCanvas(256, 256);
+  stage.width = canvas.width;
+  stage.height = canvas.height;
+
+  //Make the box and turret
+  let box = rectangle(32, 32, "gray");
+  let turret = line("red", 4, 0, 0, 32, 0);
+  turret.x = 16;
+  turret.y = 16;
+
+  //Group them together as a composite sprite called `tank`
+  tank = group(box, turret);
+  stage.putCenter(tank);
+
+  //Add some physics properties
+  tank.vx = 0;
+  tank.vy = 0;
+  tank.accelerationX = 0.2;
+  tank.accelerationY = 0.2;
+  tank.frictionX = 0.96;
+  tank.frictionY = 0.96;
+
+  //The speed at which the tank should rotate,
+  //initialized to 0
+  tank.rotationSpeed = 0;
+
+  //Whether or not the tank should move forward
+  tank.moveForward = false;
+  
+  //Make key objects
+  let leftArrow = keyboard(37),
+      rightArrow = keyboard(39),
+      upArrow = keyboard(38);
+
+  //Set the tank's `rotationSpeed` to -0.1 (to rotate left) if the
+  //left arrow key is being pressed
+  leftArrow.press = () => tank.rotationSpeed = -0.1;
+
+  //If the left arrow key is released and the right arrow
+  //key isn't being pressed down, set the `rotationSpeed` to 0
+  leftArrow.release = () => {
+    if (!rightArrow.isDown) tank.rotationSpeed = 0;
+  }
+
+  //Do the same for the right arrow key, but set
+  //the `rotationSpeed` to 0.1 (to rotate right)
+  rightArrow.press = () => tank.rotationSpeed = 0.1;
+  rightArrow.release = () => {
+    if (!leftArrow.isDown) tank.rotationSpeed = 0;
+  }
+
+  //Set `tank.moveForward` to `true` if the up arrow key is
+  //pressed, and set it to `false` if it's released
+  upArrow.press = () => tank.moveForward = true;
+  upArrow.release = () => tank.moveForward = false;
+
+  //Make a text sprite
+  message = text("", "12px puzzler", "black", 8, 8);
+
+  //Start the game loop
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  //Use the `rotationSpeed` to set the tank's rotation
+  tank.rotation += tank.rotationSpeed;
+
+  //If `tank.moveForward` is `true`, use acceleration  with a 
+  //bit of basic trigonometry to make the tank move in the
+  //direction of its rotation
+  if (tank.moveForward) {
+    tank.vx += tank.accelerationX * Math.cos(tank.rotation);
+    tank.vy += tank.accelerationY * Math.sin(tank.rotation);
+  } 
+  
+  //If `tank.moveForward` is `false`, use 
+  //friction to slow the tank down
+  else {
+    tank.vx *= tank.frictionX;
+    tank.vy *= tank.frictionY;
+  }
+
+  //Apply the tank's velocity to its position to make the tank move
+  tank.x += tank.vx;
+  tank.y += tank.vy;
+
+  //Display the tank's angle of rotation
+  message.content = tank.rotation;
+
+  //Render the canvas
+  render(canvas);
+}
+</script>
+
+
+
+
+

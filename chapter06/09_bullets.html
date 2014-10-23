@@ -1,0 +1,172 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Firing bullets</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {
+  makeCanvas, rectangle, text, circle, line, 
+  stage, group, render, remove
+} from "../library/display";
+import {assets, shoot, outsideBounds} from "../library/utilities";
+import {keyboard} from "../library/interactive";
+
+//Load a custom font
+assets.load(["fonts/puzzler.otf"]).then(() => setup());
+
+//Declare any variables shared between functions
+let canvas, tank, message, pointer,
+    bullets = [];
+
+function setup() {
+  //Make the canvas and initialize the stage
+  canvas = makeCanvas(256, 256);
+  stage.width = canvas.width;
+  stage.height = canvas.height;
+
+  //Make the box and turret
+  let box = rectangle(32, 32, "gray");
+  let turret = line("red", 4, 0, 0, 32, 0);
+  turret.x = 16;
+  turret.y = 16;
+
+  //Group them together as a composite sprite called `tank`
+  tank = group(box, turret);
+  stage.putCenter(tank);
+
+  //Add some physics properties
+  tank.vx = 0;
+  tank.vy = 0;
+  tank.accelerationX = 0.1;
+  tank.accelerationY = 0.1;
+  tank.friction = 0.96;
+
+  //The speed at which the tank should rotate,
+  //initialized to 0
+  tank.rotationSpeed = 0;
+
+  //Whether or not the tank should move forward
+  tank.moveForward = false;
+
+  //The tank's speed
+  tank.speed = 0;
+  
+  //Make key objects
+  let leftArrow = keyboard(37),
+      rightArrow = keyboard(39),
+      upArrow = keyboard(38),
+      space = keyboard(32);
+
+  //Set the tank's `rotationSpeed` to -0.1 (to rotate left) if the
+  //left arrow key is being pressed
+  leftArrow.press = () => tank.rotationSpeed = -0.1;
+
+  //If the left arrow key is released and the right arrow
+  //key isn't being pressed down, set the `rotationSpeed` to 0
+  leftArrow.release = () => {
+    if (!rightArrow.isDown) tank.rotationSpeed = 0;
+  }
+
+  //Do the same for the right arrow key, but set
+  //the `rotationSpeed` to 0.1 (to rotate right)
+  rightArrow.press = () => tank.rotationSpeed = 0.1;
+  rightArrow.release = () => {
+    if (!leftArrow.isDown) tank.rotationSpeed = 0;
+  }
+
+  //Set `tank.moveForward` to `true` if the up arrow key is
+  //pressed, and `false` if it's released
+  upArrow.press = () => tank.moveForward = true;
+  upArrow.release = () => tank.moveForward = false;
+
+  space.press = () => {
+    shoot(
+      tank,           //The shooter
+      tank.rotation,  //The angle at which to shoot
+      32,             //The bullet's offset from the center
+      7,              //The bullet's speed (pixels per frame)
+      bullets,        //The array used to store the bullets
+
+      //A function that returns the sprite that should
+      //be used to make each bullet:
+      () => circle(8, "red")
+    );
+  };  
+
+  //Make a text sprite
+  message = text("", "10px puzzler", "black", 8, 8);
+
+  //Start the game loop
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  //Use the `rotationSpeed` to set the tank's rotation
+  tank.rotation += tank.rotationSpeed;
+
+  //If `tank.moveForward` is `true`, increase the speed
+  if (tank.moveForward) {
+    tank.speed += 0.1;
+  } 
+  
+  //If `tank.moveForward` is `false`, use 
+  //friction to slow the tank down
+  else {
+    tank.speed *= tank.friction;
+  }
+
+  //Use the `speed` to figure out the acceleration in the
+  //direction of the tank’s rotation
+  tank.accelerationX = tank.speed * Math.cos(tank.rotation);
+  tank.accelerationY = tank.speed * Math.sin(tank.rotation);
+
+  //Apply the acceleration to the tank's velocity
+  tank.vx = tank.accelerationX;
+  tank.vy = tank.accelerationY;
+
+  //Apply the tank's velocity to its position to make the tank move
+  tank.x += tank.vx;
+  tank.y += tank.vy;
+ 
+  bullets = bullets.filter(bullet => {
+
+    //Move the bullet
+    bullet.x += bullet.vx;
+    bullet.y += bullet.vy;
+
+    //Check for a collision with the stage boundary
+    var collision = outsideBounds(bullet, stage.localBounds);
+
+    //If there's a collision, display the side that the collision
+    //happened on, remove the bullet sprite and filter it out of 
+    //the `bullets` array
+    if(collision) {
+
+      //Display the boundary side that the bullet crossed
+      message.content = "The bullet hit the " + collision; 
+
+      //The `remove` function will remove a sprite for its parent
+      //to make it disappear
+      remove(bullet); 
+
+      //Remove the bullet from the `bullets` array
+      return false;
+    } 
+
+    //If the bullet hasn't hit the edge of the stage,
+    //keep it in the `bullets` array
+    return true;
+  });
+
+  //Render the canvas
+  render(canvas);
+}
+</script>
+
+
+

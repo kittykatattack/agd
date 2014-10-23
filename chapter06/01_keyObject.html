@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Keyboard object</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {makeCanvas, text, stage, render} from "../library/display";
+import {assets} from "../library/utilities";
+import {keyboard} from "../library/interactive";
+
+//Load a custom font
+assets.load(["fonts/puzzler.otf"]).then(() => setup());
+
+//Declare any variables shared between functions
+let canvas;
+
+function setup() {
+  //Make the canvas and initialize the stage
+  canvas = makeCanvas(256, 256);
+  stage.width = canvas.width;
+  stage.height = canvas.height;
+
+  //Make a text sprite
+  let message = text("Press space", "16px puzzler", "black", 16, 16);
+
+  //Make a space key object
+  let space = keyboard(32);
+
+  //Assign `press` and `release` methods
+  space.press = () => message.content = "pressed";
+  space.release = () => message.content = "released";
+
+  //Usea loop to display changes to the text sprite's
+  //`content` property
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+  render(canvas);
+}
+</script>

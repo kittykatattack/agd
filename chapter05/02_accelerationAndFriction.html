@@ -1,0 +1,88 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Acceleration and friction</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the libary
+import {makeCanvas, circle, stage, render} from "../library/display";
+
+//Make the canvas and stage
+let canvas = makeCanvas(256, 256);
+stage.width = canvas.width;
+stage.height = canvas.height;
+
+//Make a ball sprite
+//circle arguments: diameter, fillStyle, strokeStyle, lineWidth, x, y
+let ball = circle(32, "gray", "black", 2, 64, 96); 
+
+//Set the ball's velocity to 0
+ball.vx = 0;
+ball.vy = 0;
+
+//Acceleration and friction properties
+ball.accelerationX = 0.2;
+ball.accelerationY = -0.2;
+ball.frictionX = 1;
+ball.frictionY = 1;
+
+//Start the game loop
+gameLoop();
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  //Apply acceleration to the velocity
+  ball.vx += ball.accelerationX;
+  ball.vy += ball.accelerationY;
+  
+  //Apply friction to the velocity
+  ball.vx *= ball.frictionX;
+  ball.vy *= ball.frictionY;
+  
+  //Move the ball by applying the new calculated velocity
+  //to the ball's x and y position
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+  
+  //Bounce the ball off the canvas edges and slow it to a stop
+  //Left and right
+  if(ball.x < 0
+  || ball.x + ball.diameter > canvas.width) {
+
+    //Turn on friction
+    ball.frictionX = 0.98;
+    ball.frictionY = 0.98;
+
+    //Turn off acceleration
+    ball.accelerationX = 0;
+    ball.accelerationY = 0;
+
+    //Bounce the ball on the x axis
+    ball.vx = -ball.vx;
+  }
+  //Top and bottom
+  if(ball.y < 0
+  || ball.y + ball.diameter > canvas.height) {
+
+    //Turn on friction
+    ball.frictionX = 0.98;
+    ball.frictionY = 0.98;
+
+    //Turn off acceleration
+    ball.accelerationX = 0;
+    ball.accelerationY = 0;
+
+    //Bounce the ball on the y axis
+    ball.vy = -ball.vy;
+  }
+
+  //Render the animation
+  render(canvas);
+}
+
+
+</script>
+
