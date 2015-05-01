@@ -18,6 +18,7 @@ assets.load(["fonts/puzzler.otf"]).then(() => setup());
 let canvas;
 
 function setup() {
+
   //Make the canvas and initialize the stage
   canvas = makeCanvas(256, 256);
   stage.width = canvas.width;
@@ -33,7 +34,7 @@ function setup() {
   space.press = () => message.content = "pressed";
   space.release = () => message.content = "released";
 
-  //Usea loop to display changes to the text sprite's
+  //Use a loop to display changes to the text sprite's
   //`content` property
   gameLoop();
 }

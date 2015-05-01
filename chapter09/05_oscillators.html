@@ -1,0 +1,80 @@
+
+<!doctype html>
+<meta charset="utf-8">
+<title>Oscillators</title>
+<body>
+<p>Press the keys number keys 1 to 5 to play music</p>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+import {keyboard} from "../library/interactive";
+
+//Create the audio context
+let actx = new AudioContext();
+
+//Capture keyboard events for the number keys 1 to 5
+let one = keyboard(49),
+    two = keyboard(50),
+    three = keyboard(51),
+    four = keyboard(52),
+    five = keyboard(53);
+
+//Define the note values
+let D = 293.66,
+    E = 329.63,
+    G = 392.00,
+    A = 440.00,
+    C = 523.25;
+
+//D
+one.press = () => {
+  playNote(D, 1);
+};
+
+//E
+two.press = () => {
+  playNote(E, 1);
+}
+
+//G
+three.press = () => {
+  playNote(G, 1);
+}
+
+//A
+four.press = () => {
+  playNote(A, 1)
+}
+
+//C
+five.press = () => {
+  playNote(C, 1);
+}
+
+
+function playNote(frequency, decay = 1, type = "sine") {
+
+  //Create an oscillator and gain node, and connect them
+  //together to the destination
+  let oscillator = actx.createOscillator(),
+      volume = actx.createGain();
+  oscillator.connect(volume);
+  volume.connect(actx.destination);
+
+  //Set the oscillator's wave form pattern
+  oscillator.type = type;
+
+  //Set the note value
+  oscillator.frequency.value = frequency;
+
+  //Fade the sound out
+  volume.gain.linearRampToValueAtTime(1, actx.currentTime);
+  volume.gain.linearRampToValueAtTime(0, actx.currentTime + decay);
+
+  //Make it play
+  oscillator.start(actx.currentTime) 
+}
+
+</script>

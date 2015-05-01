@@ -40,7 +40,7 @@ function drawPath(shape) {
     shape[lastPoint][1]
   );
   //Use a loop to plot each point
-  shape.forEach((point) => {
+  shape.forEach(point => {
     ctx.lineTo(point[0], point[1]);
   });
 }

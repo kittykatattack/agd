@@ -22,6 +22,7 @@ let canvas, tank, message, pointer,
     bullets = [];
 
 function setup() {
+
   //Make the canvas and initialize the stage
   canvas = makeCanvas(256, 256);
   stage.width = canvas.width;
@@ -140,7 +141,7 @@ function gameLoop() {
     bullet.y += bullet.vy;
 
     //Check for a collision with the stage boundary
-    var collision = outsideBounds(bullet, stage.localBounds);
+    let collision = outsideBounds(bullet, stage.localBounds);
 
     //If there's a collision, display the side that the collision
     //happened on, remove the bullet sprite and filter it out of 
@@ -150,7 +151,7 @@ function gameLoop() {
       //Display the boundary side that the bullet crossed
       message.content = "The bullet hit the " + collision; 
 
-      //The `remove` function will remove a sprite for its parent
+      //The `remove` function will remove a sprite from its parent
       //to make it disappear
       remove(bullet); 
 

@@ -1,0 +1,144 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Animtation player</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import code from the library
+import {makeCanvas, sprite, frames, filmstrip, stage, render} from "../library/display";
+import {assets} from "../library/utilities";
+import {keyboard} from "../library/interactive";
+
+//Load the assets
+assets.load([
+  "images/forest.png",
+  "images/walkcycle.png"
+]).then(() => setup());
+
+//Declare any variables shared between functions
+let forest, elf, canvas;
+
+function setup() {
+  //Make the canvas and initialize the stage
+  canvas = makeCanvas(256, 256);
+  stage.width = canvas.width;
+  stage.height = canvas.height;
+
+  //Make the background forest
+  forest = sprite(assets["images/forest.png"]);
+
+  //Use the `filmstrip` function to help load the elf's frames
+  let elfFrames = filmstrip(assets["images/walkcycle.png"], 64, 64);
+
+  elf = sprite(elfFrames);
+
+  //Set the elf's x and y position
+  elf.setPosition(32, 128);
+
+  /*
+  Define the elf's animation states. These are names that correspond
+  to frames and frame sequences in the elf's animation frames. It's
+  entirely up to you to decide what you want to call these states.
+  Define animation sequences as a 2-value array:
+
+      wallkleft: [startFrame, endFrame]
+
+  The first value is the frame number that the sequence should start
+  at, and the second value is the frame number that the sequence
+  should end at.
+  */
+
+  elf.states = {
+    up: 0,
+    left: 9,
+    down: 18,
+    right: 27,
+    walkUp: [1, 8],
+    walkLeft: [10, 17],
+    walkDown: [19, 26],
+    walkRight: [28, 35]
+  };
+
+  //Use the `show` method to display the elf's `right` state
+  elf.show(elf.states.right);
+  
+  //Set the elf's `fps`
+  elf.fps = 12;
+
+  //Create the keyboard objects
+  let leftArrow = keyboard(37),
+      upArrow = keyboard(38),
+      rightArrow = keyboard(39),
+      downArrow = keyboard(40);
+  
+  //Assign key `press` and release methods that
+  //show and play the elf's different states
+  leftArrow.press = function() {
+    elf.playSequence(elf.states.walkLeft);
+    elf.vx = -1;
+    elf.vy = 0;
+  };
+  leftArrow.release = function() {
+    if (!rightArrow.isDown && elf.vy === 0) {
+      elf.vx = 0;
+      elf.show(elf.states.left);
+    }
+  };
+  upArrow.press = function() {
+    elf.playSequence(elf.states.walkUp);
+    elf.vy = -1;
+    elf.vx = 0;
+  };
+  upArrow.release = function() {
+    if (!downArrow.isDown && elf.vx === 0) {
+      elf.vy = 0;
+      elf.show(elf.states.up);
+    }
+  };
+  rightArrow.press = function() {
+    elf.playSequence(elf.states.walkRight);
+    elf.vx = 1;
+    elf.vy = 0;
+  };
+  rightArrow.release = function() {
+    if (!leftArrow.isDown && elf.vy === 0) {
+      elf.vx = 0;
+      elf.show(elf.states.right);
+    }
+  };
+  downArrow.press = function() {
+    elf.playSequence(elf.states.walkDown);
+    elf.vy = 1;
+    elf.vx = 0;
+  };
+  downArrow.release = function() {
+    if (!upArrow.isDown && elf.vx === 0) {
+      elf.vy = 0;
+      elf.show(elf.states.down);
+    }
+  };
+
+  //Start the game loop
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  //Move the elf and constrain it to the canvas boundaries
+  //(-18 and +18 are to compensate for image padding around the sprite)
+  elf.x = Math.max(-18, Math.min(elf.x + elf.vx, canvas.width - elf.width + 18)); 
+  elf.y = Math.max(64, Math.min(elf.y + elf.vy, canvas.height - elf.height));
+  
+  //Render the canvas
+  render(canvas);
+}
+
+</script>
+
+
+
+
+

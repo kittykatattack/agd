@@ -23,6 +23,15 @@ let output = document.querySelector("p");
 //Make the pointer
 let pointer = makePointer(canvas);
 
+//Add a custom `press` method
+pointer.press = () => console.log("The pointer was pressed");
+
+//Add a custom `release` method
+pointer.release = () => console.log("The pointer was released");
+
+//Add a custom `tap` method
+pointer.tap = () => console.log("The pointer was tapped");
+
 //Use a loop to display changes to the output text
 gameLoop();
 

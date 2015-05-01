@@ -1,0 +1,127 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Special effects</title>
+<body>
+<p>Music:
+<br>a = play 
+<br>b = pause 
+<br>c = restart
+<br>d = go to the 10 second point
+<br>
+<br>Shoot:
+<br>e = Shoot sound
+<br>
+<br>Bounce:
+<br>f = Bounce sound
+</p>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+//Import the keyboard function
+import {keyboard} from "../library/interactive";
+import {assets} from "../library/utilities";
+
+//Load the sound
+assets.load([
+  "sounds/shoot.wav",
+  "sounds/music.wav",
+  "sounds/bounce.mp3"
+]).then(() => setup());
+
+//`setupSounds` will run as soon as the sounds are loaded
+function setup() {
+
+  //Create a variable to access the loaded music sound
+  let music = assets["sounds/music.wav"];
+
+  //Make the music loop
+  music.loop = true;
+
+  //Set the pan
+  music.pan = -0.8;
+
+  //Set the volume
+  music.volume = 2;
+
+  //Set the reverb
+  //duration, decay, reverse
+  music.setReverb(1, 5, false);
+
+  //Set `reverb` to `false` to switch it off or
+  //`true` to switch it on again later
+  //music.reverb = false;
+  //music.reverb = true;
+
+  //Set the playback rate
+  music.playbackRate = 1;
+
+  //The shoot sound
+  let shoot = assets["sounds/shoot.wav"];
+  shoot.pan = 0.8;
+
+  //The bounce sound
+  let bounce = assets["sounds/bounce.mp3"];
+
+  //Set the echo effect
+  //arguments: delayValue, feedbackValue, filterValue
+  bounce.setEcho(0.2, 0.5, 1000);
+
+  //Set `echo` to `false` to switch it off or
+  //`true` to switch it on later
+  //bounce.echo = false;
+  //bounce.echo = true;
+
+  //Capture keyboard key events
+  let a = keyboard(65),
+      b = keyboard(66),
+      c = keyboard(67),
+      d = keyboard(68),
+      e = keyboard(69),
+      f = keyboard(70);
+
+  //Use the key `press` methods to control the sound
+  //Play the music with the `a` key
+  a.press = () => {
+    if (!music.isPlaying) music.play();
+    console.log("music playing");
+  };
+
+  //Pause the music with the `b` key
+  b.press = () => {
+    music.pause();
+    console.log("music paused");
+  };
+
+  //Restart the music with the `c` key
+  c.press = () => {
+    music.restart();
+    console.log("music restarted");
+  };
+
+  //Play the music from the 10 second mark
+  //with the `d` key
+  d.press = () => {
+    music.playFrom(10);
+    console.log("music start point changed");
+  };
+
+  //Play the shoot sound
+  e.press = () => {
+    shoot.play();
+    console.log("Shoot sound");
+  };
+
+  //Play the bounce sound
+  f.press = () => {
+    bounce.play();
+    console.log("Bounce sound");
+  };
+}
+
+</script>
+</body>
+
+
+

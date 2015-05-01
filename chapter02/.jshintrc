@@ -1,0 +1,13 @@
+{
+  "undef": true,
+  "unused": true,
+  "globals": {"KA": false},
+  "indent": 2, 
+  "eqeqeq": true, 
+  "strict": true, 
+  "trailing": true, 
+  "maxlen": 70, 
+  "browser": true, 
+  "devel": true
+}
+

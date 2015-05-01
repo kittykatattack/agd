@@ -1,0 +1,149 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="height=device-height, initial-scale=1.0, maximum-scale=1.0">
+<title>Gravity</title>
+<style> * {margin: 0; padding: 0;} </style>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<body>
+<script type="module">
+import {game} from "../library/engine";
+
+let g = game(512, 512, setup, [
+  "images/spaceship.png",
+  "images/phobos.png"
+]);
+g.start();
+
+//Scale and center the game
+g.scaleToWindow();
+
+//Optionally re-scale the canvas if the browser window is changed
+window.addEventListener("resize", event => { 
+  g.scaleToWindow();
+});
+
+//Give the canvas a black background
+g.canvas.style.backgroundColor = "black";
+
+//Declare variables that should be used across functions
+let ship, planet;
+
+function setup() {
+  console.log("setup");
+
+  //Make the sprites
+  planet = g.sprite(g.assets["images/phobos.png"]); 
+  ship = g.sprite(g.assets["images/spaceship.png"]); 
+  g.stage.putCenter(planet);
+
+  //Add some physics properties
+  ship.vx = 0;
+  ship.vy = 0;
+  ship.accelerationX = 0.2;
+  ship.accelerationY = 0.2;
+
+  //There's no friction in outer space, but you could add it if you
+  //want to
+  //ship.frictionX = 0.99;
+  //ship.frictionY = 0.99;
+
+  //Give the ship and planet optional mass
+  ship.mass = 1;
+  planet.mass = 10;
+
+  //The speed at which the ship should rotate,
+  //initialized to 0
+  ship.rotationSpeed = 0;
+
+  //Whether or not the ship should move forward
+  ship.moveForward = false;
+  
+  //Make key objects
+  let leftArrow = g.keyboard(37),
+      rightArrow = g.keyboard(39),
+      upArrow = g.keyboard(38);
+
+  //Set the ship's `rotationSpeed` to -0.1 (to rotate left) if the
+  //left arrow key is being pressed
+  leftArrow.press = () => ship.rotationSpeed = -0.1;
+
+  //If the left arrow key is released and the right arrow
+  //key isn't being pressed down, set the `rotationSpeed` to 0
+  leftArrow.release = () => {
+    if (!rightArrow.isDown) ship.rotationSpeed = 0;
+  }
+
+  //Do the same for the right arrow key, but set
+  //the `rotationSpeed` to 0.1 (to rotate right)
+  rightArrow.press = () => ship.rotationSpeed = 0.1;
+  rightArrow.release = () => {
+    if (!leftArrow.isDown) ship.rotationSpeed = 0;
+  }
+
+  //Set `ship.moveForward` to `true` if the up arrow key is
+  //pressed, and set it to `false` if it's released
+  upArrow.press = () => ship.moveForward = true;
+  upArrow.release = () => ship.moveForward = false;
+
+  //Set the state to `play`
+  g.state = play;  
+}
+
+function play() {
+  //Use the `rotationSpeed` to set the ship's rotation
+  ship.rotation += ship.rotationSpeed;
+
+  //If `ship.moveForward` is `true`, use acceleration  with a 
+  //bit of basic trigonometry to make the ship move in the
+  //direction of its rotation
+  if (ship.moveForward) {
+    ship.vx += ship.accelerationX * Math.cos(ship.rotation);
+    ship.vy += ship.accelerationY * Math.sin(ship.rotation);
+  } 
+  
+  //If `ship.moveForward` is `false`, use optional
+  //friction to slow the ship down
+  else {
+    //ship.vx *= ship.frictionX;
+    //ship.vy *= ship.frictionY;
+  }
+
+  //Add gravity
+
+  //1. Create a vector between the planet and the ship
+  let vx = planet.x - ship.x,
+      vy = planet.y - ship.y;
+
+  //2. Find the vector's magnitude
+  let m = Math.sqrt(vx * vx + vy * vy);
+  
+  //3. Normalize the vector
+  let dx = vx / m, 
+      dy = vy / m;
+
+  //4. Create the gravity vector. Do this by scaling the vector
+  //between the planet and the ship to a tiny 
+  //fraction of its original size 
+  //Without mass
+  /*
+  let gravityVx = dx * 0.05,
+      gravityVy = dy * 0.05;
+  */
+  
+  //With mass:
+  let gravityVx = dx * (planet.mass * ship.mass) / m,
+      gravityVy = dy * (planet.mass * ship.mass) / m;
+
+  //5. Apply the new gravity vector to the ship's motion vector
+  ship.vx += gravityVx,
+  ship.vy += gravityVy;
+
+  //6. Apply the ship's velocity to its position to make the ship move
+  ship.x += ship.vx;
+  ship.y += ship.vy;
+}
+</script>
+</body>
+

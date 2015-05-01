@@ -1,0 +1,159 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="height=device-height, initial-scale=1.0, maximum-scale=1.0">
+<title>Boundary</title>
+<style> * {margin: 0; padding: 0;} </style>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<body>
+<script type="module">
+import {game} from "../library/engine";
+
+let g = game(512, 512, setup, ["images/spaceship.png"]);
+g.start();
+
+//Scale and center the game
+g.scaleToWindow();
+
+//Optionally re-scale the canvas if the browser window is changed
+window.addEventListener("resize", event => { 
+  g.scaleToWindow();
+});
+
+//Give the canvas a black background
+g.canvas.style.backgroundColor = "black";
+
+//Declare variables that should be used across functions
+let ship, boundary, message;
+
+function setup() {
+
+  //Make the sprites
+  ship = g.sprite(g.assets["images/spaceship.png"]); 
+  g.stage.putCenter(ship, -96);
+
+  //Add some physics properties
+  ship.vx = 0;
+  ship.vy = 0;
+  ship.accelerationX = 0.2;
+  ship.accelerationY = 0.2;
+  ship.frictionX = 0.98;
+  ship.frictionY = 0.98;
+
+  //The speed at which the ship should rotate,
+  //initialized to 0
+  ship.rotationSpeed = 0;
+
+  //Whether or not the ship should move forward
+  ship.moveForward = false;
+
+  //Make the line boundary
+  boundary = g.line("yellow", 2, 100, 100, 400, 400)
+
+  //The text sprite
+  message = g.text("", "16px Futura", "white");
+  message.setPosition(16, 16);
+  
+  //Make key objects
+  let leftArrow = g.keyboard(37),
+      rightArrow = g.keyboard(39),
+      upArrow = g.keyboard(38);
+
+  //Set the ship's `rotationSpeed` to -0.1 (to rotate left) if the
+  //left arrow key is being pressed
+  leftArrow.press = () => ship.rotationSpeed = -0.1;
+
+  //If the left arrow key is released and the right arrow
+  //key isn't being pressed down, set the `rotationSpeed` to 0
+  leftArrow.release = () => {
+    if (!rightArrow.isDown) ship.rotationSpeed = 0;
+  }
+
+  //Do the same for the right arrow key, but set
+  //the `rotationSpeed` to 0.1 (to rotate right)
+  rightArrow.press = () => ship.rotationSpeed = 0.1;
+  rightArrow.release = () => {
+    if (!leftArrow.isDown) ship.rotationSpeed = 0;
+  }
+
+  //Set `ship.moveForward` to `true` if the up arrow key is
+  //pressed, and set it to `false` if it's released
+  upArrow.press = () => ship.moveForward = true;
+  upArrow.release = () => ship.moveForward = false;
+
+
+  //Set the state to `play`
+  g.state = play;  
+}
+
+function play() {
+  //Use the `rotationSpeed` to set the ship's rotation
+  ship.rotation += ship.rotationSpeed;
+
+  //If `ship.moveForward` is `true`, use acceleration  with a 
+  //bit of basic trigonometry to make the ship move in the
+  //direction of its rotation
+  if (ship.moveForward) {
+    ship.vx += ship.accelerationX * Math.cos(ship.rotation);
+    ship.vy += ship.accelerationY * Math.sin(ship.rotation);
+  } 
+  
+  //If `ship.moveForward` is `false`, use optional
+  //friction to slow the ship down
+  else {
+    ship.vx *= ship.frictionX;
+    ship.vy *= ship.frictionY;
+  }
+
+  //Move the ship
+  ship.x += ship.vx;
+  ship.y += ship.vy;
+
+  //Create and environmental boundary
+
+  //Get a vector between the center of the ship and
+  //the start point of the line
+  let v1 = {};
+  v1.vx = boundary.ax - ship.centerX;
+  v1.vy = boundary.ay - ship.centerY;
+
+  //2. Get the boundary line's vector and magnitude 
+  let v2 = {};
+  v2.vx = boundary.bx - boundary.ax;
+  v2.vy = boundary.by - boundary.ay;
+  v2.m = Math.sqrt(v2.vx * v2.vx + v2.vy * v2.vy);
+
+  //3. Figure out the line vector's left normal
+  v2.ln = {};
+  v2.ln.vx = v2.vy;
+  v2.ln.vy = -v2.vx;
+
+  //4. Get the left normal's unit vector (dx and dy)
+  v2.ln.dx = v2.ln.vx / v2.m;
+  v2.ln.dy = v2.ln.vy / v2.m;
+  
+  //5. Get the dot product between v1 and v2's left normal
+  let dotProduct = v1.vx * v2.ln.dx + v1.vy * v2.ln.dy;
+
+  //If you need to do a projection, here's how:
+  /*
+  let projectedVx = dotProduct * v2.l.dx,
+      projectedVy = dotProduct * v2.l.dy;
+  */
+
+  //If the dot product is positive, make the line yellow,
+  //if it's negative, make the line red
+  if (dotProduct > 0) {
+    boundary.strokeStyle = "yellow";
+  } else {
+    boundary.strokeStyle = "red";  
+  }
+
+  //Display the value of the dot product
+  message.content = `Dot product: ${dotProduct}`; 
+}
+</script>
+</body>
+
+

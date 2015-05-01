@@ -32,8 +32,10 @@ ball.interactive = true;
 
 //Assign the ball's `press` method
 ball.press = () => {
+
   //An array of color names
   var colors = ["Gold", "Lavender", "Crimson", "DarkSeaGreen"];
+
   //Set the ball's `fillStyle` and `strokeStyle` to a random color
   ball.fillStyle = colors[randomInt(0, 3)];
   ball.strokeStyle = colors[randomInt(0, 3)];

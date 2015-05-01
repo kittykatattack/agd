@@ -1,0 +1,121 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Basic WebAudio</title>
+<p>Press 1 to play the music</p>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+//1. Create an audio context
+  let actx = new AudioContext();
+
+  //2. Declare a variable to hold the sound we'll load
+  let soundBuffer;
+
+  //3. Load the sound
+  //a. Use an XMLHttpRequest object to load the sound
+  let xhr = new XMLHttpRequest();
+
+  //b. Set properties for the file we want to load.
+  //Use GET and set the path to the sound file.
+  //`true` means that the file will load asynchronously and will create
+  //an event when the file has finished loading
+  xhr.open("GET", "sounds/music.wav", true);
+
+  //c. Set the `responseType`, which is the file format we're expecting to
+  //load. Sound files should be loaded as binary files, so the
+  //`responseType` needs to be `arraybuffer`
+  xhr.responseType = "arraybuffer";
+
+  //d. Load the sound into the program
+  xhr.send();
+
+  //e. Create a `loadHandler` that runs when the sound has been loaded
+  xhr.addEventListener("load", loadHandler, false);
+
+  function loadHandler(event) {
+
+    //console.log("music loaded")
+    //f. Decode the audio file and store it in the `music` sound
+    //variable. The `buffer` is the raw audio data
+    actx.decodeAudioData(
+      xhr.response,
+      buffer => {
+
+        //g. Copy the audio file into the `soundBuffer` variable
+        soundBuffer = buffer;
+      },
+
+      //Optionally throw an error if the audio can't be decoded
+      error => {
+        throw new Error("Audio could not be decoded: " + error);
+      }
+    );
+  }
+
+  //f. Play a sound when a key is pressed
+  window.addEventListener("keydown", keydownHandler, false);
+
+  function keydownHandler(event) {
+    switch (event.keyCode) {
+      case 49:
+        if (soundBuffer) {
+          /*
+          //4. Play the sound (without volume and pan control)
+          //a. Create a new `soundNode` variable and tell it to use the
+          //sound that we loaded as its audio source
+          let soundNode = actx.createBufferSource();
+          soundNode.buffer = soundBuffer;
+          //b. Connect the sound to the destination 
+          soundNode.connect(actx.destination);
+          //c. Finally, actually play the sound. Use the `start` method to
+          //play the sound “now”, which is the audio context’s `currentTime`
+          soundNode.start(actx.currentTime);
+          */
+          //4. Play the sound (with volume, pan and loop)      
+          let soundNode = actx.createBufferSource();
+          soundNode.buffer = soundBuffer;
+
+          //Create volume and pan nodes
+          let volumeNode = actx.createGain();
+          let panNode = actx.createStereoPanner();
+           
+          //The WebAudioAPI also has a `createPanner` method
+          //which lets you do 3D spatial positioning of sound.
+          //However, it's over-kill for simple 2D stereo effects.
+          //let panNode = actx.createPanner();
+          //Connect the sound source to the pan node, the pan node to
+          //volume node, and the volume node to the destination 
+          soundNode.connect(volumeNode);
+          volumeNode.connect(panNode);
+          panNode.connect(actx.destination);
+
+          //Set the volume
+          volumeNode.gain.value = 0.5;
+
+          //Set the pan fully to the left
+          panNode.pan.value = -1;
+
+          /*
+          //If you used the `createPanner` method, you need to
+          //simulate 2D panning like this:
+          //Set left/right panning
+          let x = -1,
+              y = 0,
+              z = 1 - Math.abs(x);
+          panNode.setPosition(x, y, z);
+          //panNode.panningModel = "equalpower";
+          */
+
+          //Optionally loop the sound
+          soundNode.loop = true;
+
+          //Finally, play the sound
+          soundNode.start(actx.currentTime);
+        }
+
+        break;
+    }
+  }
+</script>
+

@@ -1,0 +1,116 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Bezier curve</title>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<body>
+<script type="module">
+
+//Import code from the library
+import {makeCanvas, stage, draggableSprites, sprite, circle, render} from "../library/display";
+import {assets} from "../library/utilities";
+import {
+  tweens, slide, fadeOut, fadeIn, pulse, breathe, wobble,
+  strobe, tweenProperty, removeTween
+} from "../library/tween";
+
+//Load the texture atlas containing the animal sprite images
+assets.load([
+  "images/animals.json"
+]).then(() => setup());
+
+//Easing functions
+
+//Linear
+let linear = (x) => x;
+
+//Smoothstep
+let smoothstep = (x) => x * x * (3 - 2 * x);
+let smoothstepSquared = (x) => Math.pow((x * x * (3 - 2 * x)), 2);
+let smoothstepCubed = (x) => Math.pow((x * x * (3 - 2 * x)), 3);
+
+//Acceleration
+let acceleration = (x) => x * x;
+let accelerationCubed = (x) => Math.pow(x * x, 3);
+
+//Deceleration
+let deceleration = (x) => 1 - Math.pow(1 - x, 2);
+let decelerationCubed = (x) => 1 - Math.pow(1 - x, 3);
+
+//Sine
+let sine = (x) => Math.sin(x * Math.PI / 2);
+let sineSquared = (x) => Math.pow(Math.sin(x * Math.PI / 2), 2);
+let sineCubed = (x) => Math.pow(Math.sin(x * Math.PI / 2), 2);
+let inverseSine = (x) => 1 - Math.sin((1 - x) * Math.PI / 2);
+let inverseSineSquared = (x) => 1 - Math.pow(Math.sin((1 - x) * Math.PI / 2), 2);
+let inverseSineCubed = (x) => 1 - Math.pow(Math.sin((1 - x) * Math.PI / 2), 3);
+//`sineFull` uses the whole sine curve, and the effect is the same as
+//smoothstep, but more computationally expensive.
+let sineFull = (x) => 0.5 - Math.cos(-x * Math.PI) * 0.5;
+
+//Bezier curve
+function cubicBezier(t, a, b, c, d) {
+    var t2 = t * t;
+    var t3 = t2 * t;
+    return a  
+      + (-a * 3 + t * (3 * a - a * t)) * t
+      + (3 * b + t * (-6 * b + b * 3 * t)) * t 
+      + (c * 3 - c * 3 * t) * t2 + d * t3;
+}
+
+//Declare any variables shared between functions
+let canvas, cat, totalFrames, frameCounter, 
+    startX, startY, endX, endY;
+
+function setup() {
+  //Make the canvas and initialize the stage
+  canvas = makeCanvas(400, 400);
+  stage.width = canvas.width;
+  stage.height = canvas.height;
+
+  cat = sprite(assets["cat.png"]); 
+  cat.setPosition(25, 250);
+
+  totalFrames = 120;
+  frameCounter = 0;
+  startX = cat.x;
+  startY = cat.y;
+  endX = 225;
+  endY = 250;
+
+  //Start the game loop
+  gameLoop();
+}
+
+function gameLoop() {
+  requestAnimationFrame(gameLoop);
+
+  //Run the animation while `frameCounter` is
+  //less than the `totalFrames`
+  if (frameCounter < totalFrames) {
+
+    //Find the normalized time value 
+    let normalizedTime = frameCounter / totalFrames;
+
+    //Optionally apply an easing formula
+    let curvedTime = smoothstep(normalizedTime);
+
+    //Make the sprite follow a Bezier curve
+    //cat.x = cubicBezier(curvedTime, startX, 100, 175, endX);
+    //cat.y = cubicBezier(curvedTime, startY, 50, 0, endY);
+    cat.x = cubicBezier(curvedTime, startX, 25, 225, endX);
+    cat.y = cubicBezier(curvedTime, startY, 50, 50, endY);
+
+    //Add one to the frame counter
+    frameCounter += 1;
+  }
+  
+  //Render the canvas
+  render(canvas);
+}
+</script>
+</body>
+
+
+

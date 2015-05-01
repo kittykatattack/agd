@@ -67,9 +67,11 @@ each sprite has been created. Here's the format for creating a grid:
 */
 
 pegs = grid(
+
   //Set the grid's properties
   5, 4, 48, 48, 
   true, 0, 0,
+
   //A function that describes how to make each peg in the grid.
   //A random diameter and color is selected for each one
   () => {
@@ -81,10 +83,11 @@ pegs = grid(
     peg.fillStyle = colors[randomInt(0, 4)];
     return peg;
   },
+
   //Run any extra code after each peg is made, if you want to
   () => console.log("extra!")
 );
-
+ 
 //Position the grid of pegs
 pegs.setPosition(8, 48);
 

@@ -1,0 +1,181 @@
+<meta charset="utf-8">
+<meta name="viewport" content="height=device-height, initial-scale=1.0, maximum-scale=1.0">
+<title>Line collision</title>
+<style> * {margin: 0; padding: 0;} </style>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<body>
+<script type="module">
+import {game} from "../library/engine";
+
+let g = game(512, 512, setup, ["images/spaceship.png"]);
+g.start();
+
+//Scale and center the game
+g.scaleToWindow();
+
+//Optionally re-scale the canvas if the browser window is changed
+window.addEventListener("resize", event => { 
+  g.scaleToWindow();
+});
+
+//Give the canvas a black background
+g.canvas.style.backgroundColor = "black";
+
+//Declare variables that should be used across functions
+let ship, boundary, message, target;
+
+function setup() {
+
+  //Make the sprites
+  ship = g.sprite(g.assets["images/spaceship.png"]); 
+  g.stage.putCenter(ship, -96);
+
+  //Add some physics properties
+  ship.vx = 0;
+  ship.vy = 0;
+  ship.accelerationX = 0.2;
+  ship.accelerationY = 0.2;
+  ship.frictionX = 0.98;
+  ship.frictionY = 0.98;
+
+  //The speed at which the ship should rotate,
+  //initialized to 0
+  ship.rotationSpeed = 0;
+
+  //Whether or not the ship should move forward
+  ship.moveForward = false;
+
+  //Make the line boundary
+  boundary = g.line("yellow", 2, 100, 100, 400, 400)
+
+  //The text sprite
+  message = g.text("", "16px Futura", "white");
+  message.setPosition(16, 16);
+  
+  //Make key objects
+  let leftArrow = g.keyboard(37),
+      rightArrow = g.keyboard(39),
+      upArrow = g.keyboard(38);
+
+  //Set the ship's `rotationSpeed` to -0.1 (to rotate left) if the
+  //left arrow key is being pressed
+  leftArrow.press = () => ship.rotationSpeed = -0.1;
+
+  //If the left arrow key is released and the right arrow
+  //key isn't being pressed down, set the `rotationSpeed` to 0
+  leftArrow.release = () => {
+    if (!rightArrow.isDown) ship.rotationSpeed = 0;
+  }
+
+  //Do the same for the right arrow key, but set
+  //the `rotationSpeed` to 0.1 (to rotate right)
+  rightArrow.press = () => ship.rotationSpeed = 0.1;
+  rightArrow.release = () => {
+    if (!leftArrow.isDown) ship.rotationSpeed = 0;
+  }
+
+  //Set `ship.moveForward` to `true` if the up arrow key is
+  //pressed, and set it to `false` if it's released
+  upArrow.press = () => ship.moveForward = true;
+  upArrow.release = () => ship.moveForward = false;
+
+
+  //Set the state to `play`
+  g.state = play;  
+}
+
+function play() {
+  //Use the `rotationSpeed` to set the ship's rotation
+  ship.rotation += ship.rotationSpeed;
+
+  //If `ship.moveForward` is `true`, use acceleration  with a 
+  //bit of basic trigonometry to make the ship move in the
+  //direction of its rotation
+  if (ship.moveForward) {
+    ship.vx += ship.accelerationX * Math.cos(ship.rotation);
+    ship.vy += ship.accelerationY * Math.sin(ship.rotation);
+  } 
+  
+  //If `ship.moveForward` is `false`, use optional
+  //friction to slow the ship down
+  else {
+    ship.vx *= ship.frictionX;
+    ship.vy *= ship.frictionY;
+  }
+
+  //Move the ship
+  ship.x += ship.vx;
+  ship.y += ship.vy;
+
+  //Prevent the ship from crossing the line
+
+  //1. Get the ship's motion vector and unit vector
+  let v1 = {};
+  v1.vx = ship.vx;
+  v1.vy = ship.vy;
+  v1.m = Math.sqrt(v1.vx * v1.vx + v1.vy * v1.vy);
+  v1.dx = v1.vx / v1.m || 0;
+  v1.dy = v1.vy / v1.m || 0;
+
+  //3. Get the boundary line's vector, unit vector, left normal,
+  //and left normal unit vector 
+  let v2 = {};
+  v2.ax = boundary.ax;
+  v2.ay = boundary.ay;
+  v2.bx = boundary.bx;
+  v2.by = boundary.by;
+  v2.vx = v2.bx - v2.ax;
+  v2.vy = v2.by - v2.ay;
+  v2.m = Math.sqrt(v2.vx * v2.vx + v2.vy * v2.vy);
+  v2.dx = v2.vx / v2.m || 0;
+  v2.dy = v2.vy / v2.m || 0;
+  v2.ln = {};
+  v2.ln.vx = v2.vy;
+  v2.ln.vy = -v2.vx;
+  v2.ln.dx = v2.ln.vx / v2.m || 0;
+  v2.ln.dy = v2.ln.vy / v2.m || 0;
+
+  //4. Get a vector between the start point of 
+  //the ship's motion vector and the start point of the line 
+  let v3 = {};
+  v3.vx = v2.ax - ship.centerX;
+  v3.vy = v2.ay - ship.centerY;
+
+  //5. You need two Dot products.
+  //The first tells you whether the ship is 
+  //between the start and end points of the line
+  let dp1 = v3.vx * v2.dx + v3.vy * v2.dy;
+
+  //The second dot product tells you if the ship has crossed the line
+  let dp2 = v3.vx * v2.ln.dx + v3.vy * v2.ln.dy;
+
+  //6. Check if the ship is within the vector's scope
+  if (dp1 > -v2.m && dp1 < 0) {
+
+    //7. Check if the ship’s motion vector has crossed the line from right to left
+    if(dp2 <= 0) {
+
+      //8. Find the collision vector
+      let collisionVx = v1.dx * Math.abs(dp2),
+          collisionVy = v1.dy * Math.abs(dp2);
+
+      //9. Move the ship out of the collision
+      //Note: repositioning the sprite like this can sometimes
+      //be unstable in complex physics environments. For a more robust
+      //solution calculate the intersection point and position 
+      //the sprite at the intersection point's x and y position.
+      //See the `intersection.html` file for details
+      ship.x -= collisionVx; 
+      ship.y -= collisionVy;
+
+      //10. Set the ship's velocity to zero
+      ship.vx = 0;
+      ship.vy = 0; 
+    }
+  }
+}
+</script>
+</body>
+

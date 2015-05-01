@@ -1,0 +1,102 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Sound effects</title>
+<body>
+<p>Sound effects:
+<br>
+<br>1 - Shoot
+<br>2 - Jump
+<br>3 - Explosion
+<br>4 - bonus points (musical motif)
+</p>
+<script src="../library/plugins/traceur-compiler/bin/traceur.js" type="text/javascript"></script>
+<script src="../library/plugins/traceur-compiler/src/bootstrap.js" type="text/javascript"></script>
+<script>traceur.options.experimental = true;</script>
+<script type="module">
+
+import {soundEffect} from "../library/sound";
+import {keyboard} from "../library/interactive";
+
+//Create the audio context
+let actx = new AudioContext();
+
+//Capture keyboard events for the number keys 1 to 4
+let shoot = keyboard(49),
+    jump = keyboard(50),
+    explosion = keyboard(51),
+    bonus = keyboard(52);
+
+//Play the sounds when the keys are pressed
+shoot.press = () => shootSound();
+jump.press = () => jumpSound();
+explosion.press = () => explosionSound(); 
+bonus.press = () => bonusSound(); 
+
+//The shoot sound
+function shootSound() {
+  soundEffect(
+    1046.5,           //frequency
+    0,                //attack
+    0.3,              //decay
+    "sawtooth",       //waveform
+    1,                //Volume
+    -0.8,             //pan
+    0,                //wait before playing
+    1200,             //frequency bend amount
+    false,            //reverse bend
+    0,                //random frequency range
+    25,               //dissonance
+    [0.2, 0.2, 2000], //echo array: [delay, feedback, filter]
+    undefined         //reverb array: [duration, decay, reverse?]
+  );
+}
+
+//The jump sound
+function jumpSound() {
+  soundEffect(
+    523.25,     //frequency
+    0.05,       //attack
+    0.2,        //decay
+    "sine",     //waveform
+    3,          //volume
+    0.8,        //pan
+    0,          //wait before playing
+    600,        //frequency bend amount
+    true,       //reverse
+    100,        //random frequency range
+    0,          //dissonance
+    undefined,  //echo: [delay, feedback, filter]
+    undefined   //reverb: [duration, decay, reverse?]
+  );
+}
+
+//The explosion sound
+function explosionSound() {
+  soundEffect(
+    16,          //frequency
+    0,           //attack
+    1,           //decay
+    "sawtooth",  //waveform
+    1,           //volume
+    0,           //pan
+    0,           //wait before playing
+    0,           //frequency bend amount
+    false,       //reverse
+    0,           //random frequency range
+    50,          //dissonance
+    undefined    //echo: [delay, feedback, filter]
+  );
+}
+
+//The bonus points sound
+function bonusSound() {
+  //D
+  soundEffect(587.33, 0, 0.2, "square", 1, 0, 0);
+  //A
+  soundEffect(880, 0, 0.2, "square", 1, 0, 0.1);
+  //High D
+  soundEffect(1174.66, 0, 0.3, "square", 1, 0, 0.2);
+}
+
+</script>
+

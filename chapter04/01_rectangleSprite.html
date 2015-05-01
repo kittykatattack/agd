@@ -24,7 +24,6 @@ document.body.appendChild(canvas);
 //Create the context as a property of the canvas
 let ctx = canvas.getContext("2d");
 
-
 //An array to store all the sprites we're going to make
 let children = [];
 
@@ -108,7 +107,8 @@ function render(canvas, ctx) {
   function displaySprite(sprite) {
     //Display a sprite if it's visible
     if (sprite.visible) {
-      //Save canvas's present state
+
+      //Save the canvas's present state
       ctx.save();
 
       //Shift the canvas to the sprite's position
