@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Tracuer self-compile in Web page for debugging.</title>
+    <script src="../bin/traceur.js"></script>
+    <script>
+    // Settings the same as the tests
+    traceur.options.debug = true;
+    // Because of issue 534 we cannot self-compile with freeVariableChecker.
+    // traceur.options.freeVariableChecker = true;
+    traceur.options.validate = true;
+    var url = window.location.href;
+
+    System.import('../src/traceur', {}).then(
+        function(mod) {
+          console.log('DONE');
+        },
+        function(error) {
+          console.error(error);
+        }
+    );
+    </script>
+  </head>
+  <body>
+    For Self-hosted compilation: <code>make self</code>. Open DevTools.  Reload. Repeat.
+  </body>
+</html>
