@@ -57,7 +57,7 @@ class DisplayObject {
     this.parent = undefined;
     
     //The sprite's `children` array
-    this.children = [];
+    // this.children = [];
     
     //Optional drop shadow properties.
     //Set `shadow` to `true` if you want the sprite to display a
