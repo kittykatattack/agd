@@ -70,12 +70,12 @@ button.addEventListener(
   "mousedown", 
   event => {
     //Is there any element that's currently full screen?
-    if (!document.webkitFullscreenElement) {
+    if (!document.fullscreenElement) {
       //If not, make the stage full screen
       stage.requestFullscreen();
     } else {
       //If there is, exit full screen mode
-      document.webkitExitFullscreen();
+      document.exitFullscreen();
     }
   }, 
   false
